@@ -68,5 +68,6 @@
 	</ItemGroup>
 	<PropertyGroup>
 		<SourceRevisionId>build$([System.DateTime]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ss:fffZ"))</SourceRevisionId>
+		<PublishTrimmed>False</PublishTrimmed>
 	</PropertyGroup>
 </Project>

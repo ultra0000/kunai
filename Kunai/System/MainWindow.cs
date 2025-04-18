@@ -14,22 +14,22 @@ using Hexa.NET.GLFW;
 
 namespace Kunai
 {
-    public class MainWindow : HekonrayWindow
+    public class MainWindow : HekonrayMainWindow
     {
         private IntPtr m_IniName;
+        private string m_AppName = "Kunai";
         private KunaiProject KunaiProject => (KunaiProject)Project;
         public static ImGuiWindowFlags WindowFlags = ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoCollapse;
 
         public MainWindow(Version in_OpenGlVersion, Vector2Int in_WindowSize) : base(in_OpenGlVersion, in_WindowSize)
         {
-            ApplicationName = "Kunai";
-            Title = ApplicationName;
+            Title = m_AppName;
         }
 
         public override void OnLoad()
         {
             Project = KunaiProject.Instance;
-            KunaiProject.SetWindowParameters(this, new System.Numerics.Vector2(ClientSize.X, ClientSize.Y));
+            KunaiProject.SetWindowParameters(this, new System.Numerics.Vector2(WindowSize.X, WindowSize.Y));
             OnActionWithArgs = LoadFromArgs;
             TeamSpettro.Resources.Initialize(Path.Combine(Program.Path, "config.json"));
             
@@ -77,9 +77,9 @@ namespace Kunai
                 KunaiProject.Render(KunaiProject.WorkProjectCsd, (float)deltaTime);
         
                 if (KunaiProject.IsFileLoaded)
-                    Title = ApplicationName + $" - [{KunaiProject.Config.WorkFilePath}]";
+                    Title = m_AppName + $" - [{KunaiProject.Config.WorkFilePath}]";
                 else
-                    Title = ApplicationName;
+                    Title = m_AppName;
             }
         }
     }

@@ -235,16 +235,16 @@ namespace Shuriken.Rendering
             /// TODO: wtf is NextSprite or SpriteFactor?
             var quad = new Quad();
             var aspect = new Vector2(in_DrawData.AspectRatio, 1.0f);
-
+            float rotation = in_DrawData.Rotation * MathF.PI / 180.0f;
             var topLeft = in_DrawData.OverrideUvCoords ? in_DrawData.TopLeft : in_DrawData.OriginCast.TopLeft;
             var bottomLeft = in_DrawData.OverrideUvCoords ? in_DrawData.BottomLeft : in_DrawData.OriginCast.BottomLeft;
             var topRight = in_DrawData.OverrideUvCoords ? in_DrawData.TopRight : in_DrawData.OriginCast.TopRight;
             var bottomRight = in_DrawData.OverrideUvCoords ? in_DrawData.BottomRight :  in_DrawData.OriginCast.BottomRight;
 
-            quad.TopLeft.Position = in_DrawData.Position + ((topLeft * in_DrawData.Scale * aspect).Rotate(in_DrawData.Rotation) / aspect);
-            quad.BottomLeft.Position = in_DrawData.Position + ((bottomLeft * in_DrawData.Scale * aspect).Rotate(in_DrawData.Rotation) / aspect);
-            quad.TopRight.Position = in_DrawData.Position + ((topRight * in_DrawData.Scale * aspect).Rotate(in_DrawData.Rotation) / aspect);
-            quad.BottomRight.Position = in_DrawData.Position + ((bottomRight * in_DrawData.Scale * aspect).Rotate(in_DrawData.Rotation) / aspect);
+            quad.TopLeft.Position = in_DrawData.Position + ((topLeft * in_DrawData.Scale * aspect).Rotate(rotation) / aspect);
+            quad.BottomLeft.Position = in_DrawData.Position + ((bottomLeft * in_DrawData.Scale * aspect).Rotate(rotation) / aspect);
+            quad.TopRight.Position = in_DrawData.Position + ((topRight * in_DrawData.Scale * aspect).Rotate(rotation) / aspect);
+            quad.BottomRight.Position = in_DrawData.Position + ((bottomRight * in_DrawData.Scale * aspect).Rotate(rotation) / aspect);
 
             if (in_DrawData.Sprite != null && in_DrawData.NextSprite != null)
             {

@@ -12,7 +12,6 @@ using SharpNeedle.Framework.Ninja.Csd;
 using SharpNeedle.IO;
 using SharpNeedle.Resource;
 using SharpNeedle.Utilities;
-using Shuriken.Models;
 using Shuriken.Rendering;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
@@ -46,7 +45,7 @@ namespace Kunai.ShurikenRenderer
         public CsdProject WorkProjectCsd;
         public List<WindowBase> Windows = new List<WindowBase>();
         private SViewportData m_ViewportData;
-        private HekonrayWindow m_Window;
+        private HekonrayMainWindow m_Window;
         private bool m_SaveScreenshotWhenRendered;
         private float m_DeltaTime;
 
@@ -73,7 +72,7 @@ namespace Kunai.ShurikenRenderer
             SettingsManager.SetFloat("ViewColor_Y", in_Color.Y);
             SettingsManager.SetFloat("ViewColor_Z", in_Color.Z);
         }
-        public void SetWindowParameters(HekonrayWindow in_Window2, Vector2 in_ClientSize)
+        public void SetWindowParameters(HekonrayMainWindow in_Window2, Vector2 in_ClientSize)
         {
             ScreenSize = in_ClientSize;
             m_Window = in_Window2;
@@ -148,6 +147,20 @@ namespace Kunai.ShurikenRenderer
                 {
                     foreach (ITexture texture in csdTextureList)
                     {
+                        if(texture is TextureMirage)
+                        {
+                            TextureMirage mirageTex = (TextureMirage)texture;
+
+                            //Some files may have embedded textures inside the file itself
+                            if(mirageTex.Data != null)
+                            {
+                                if(mirageTex.Data.Length != 0)
+                                {
+                                    SpriteHelper.Textures.Add(new Texture("", mirageTex.Data));
+                                    continue;
+                                }
+                            }
+                        }
                         string texPath = Path.Combine(@root, texture.Name);
                         SpriteHelper.Textures.Add(new Texture(texPath));
 
@@ -386,7 +399,7 @@ namespace Kunai.ShurikenRenderer
             }
             // unbind our bo so nothing else uses it
             GLSingle.Ins.BindFramebuffer(GLFramebufferTarget.Framebuffer, 0);
-            GLSingle.Ins.Viewport(0, 0, m_Window.ClientSize.X, m_Window.ClientSize.Y); // back to full screen size
+            GLSingle.Ins.Viewport(0, 0, m_Window.WindowSize.X, m_Window.WindowSize.Y); // back to full screen size
 
             UpdateWindows();
         }
@@ -496,7 +509,8 @@ namespace Kunai.ShurikenRenderer
             var vis = in_Vis.GetVisibility(in_Scene);
             foreach (var family in in_Scene.Families)
             {
-                var transform = new CastTransform();
+                var transform = new SSpriteDrawData();
+                transform.Scale = Vector2.One;
                 transform.Color = new Vector4(1, 1, 1, 1);
                 if (family.Casts.Count == 0)
                     continue;
@@ -593,7 +607,7 @@ namespace Kunai.ShurikenRenderer
         /// <param name="in_SpriteDraw"></param>
         /// <param name="in_Inheritance"></param>
         /// <param name="in_Transform"></param>
-        private void ApplyInheritance(ref SSpriteDrawData in_SpriteDraw, ElementInheritanceFlags in_Inheritance, CastTransform in_Transform)
+        private void ApplyInheritance(ref SSpriteDrawData in_SpriteDraw, ElementInheritanceFlags in_Inheritance, SSpriteDrawData in_Transform)
         {
             // Inherit position
             if ((in_Inheritance & ElementInheritanceFlags.InheritXPosition) != 0)
@@ -619,11 +633,11 @@ namespace Kunai.ShurikenRenderer
                 in_SpriteDraw.Color *= in_Transform.Color;
             }
         }
-        private void DrawCast(Scene in_Scene, Cast in_UiElement, CastTransform in_Transform, int in_Priority, float in_Time, CsdVisData.Scene in_Vis)
+        private void DrawCast(Scene in_Scene, Cast in_UiElement, SSpriteDrawData in_Parent, int in_Priority, float in_Time, CsdVisData.Scene in_Vis)
         {
             float sprId = in_UiElement.Info.SpriteIndex;
             SSpriteDrawData sSpriteDrawData = new SSpriteDrawData(in_UiElement, in_Scene);
-            float angle = in_Transform.Rotation * MathF.PI / 180.0f; //to radians
+            float angle = in_Parent.Rotation * MathF.PI / 180.0f; //to radians
 
             ApplyAnimationValues(ref sSpriteDrawData, ref in_Vis, ref sprId, in_UiElement, in_Time);
             if (sSpriteDrawData.Hidden)
@@ -638,8 +652,8 @@ namespace Kunai.ShurikenRenderer
             // Inherit position scale
             // TODO: Is this handled through flags?
             // UPDATE: might actually be something the game doesnt do
-            sSpriteDrawData.Position.X *= in_Transform.Scale.X;
-            sSpriteDrawData.Position.Y *= in_Transform.Scale.Y;
+            sSpriteDrawData.Position.X *= in_Parent.Scale.X;
+            sSpriteDrawData.Position.Y *= in_Parent.Scale.Y;
 
             // Rotate through parent transform
             float rotatedX = sSpriteDrawData.Position.X * MathF.Cos(angle) * in_Scene.AspectRatio + sSpriteDrawData.Position.Y * MathF.Sin(angle);
@@ -649,13 +663,12 @@ namespace Kunai.ShurikenRenderer
             sSpriteDrawData.Position.Y = rotatedY;
 
             sSpriteDrawData.Position += in_UiElement.Origin;
-            ApplyInheritance(ref sSpriteDrawData, (ElementInheritanceFlags)in_UiElement.InheritanceFlags.Value, in_Transform);
+            ApplyInheritance(ref sSpriteDrawData, (ElementInheritanceFlags)in_UiElement.InheritanceFlags.Value, in_Parent);
             ApplyPropertyMask(ref sSpriteDrawData, (CastPropertyMask)in_UiElement.Field2C.Value);
             var type = in_UiElement.Type;
 
             if (visibilityDataCast.Active && in_UiElement.Enabled)
             {
-                sSpriteDrawData.Rotation *= MathF.PI / 180.0f;
                 switch (type)
                 {
                     case Cast.EType.Sprite:
@@ -723,10 +736,8 @@ namespace Kunai.ShurikenRenderer
                             break;
                         }
                 }
-                var childTransform = new CastTransform(sSpriteDrawData.Position, sSpriteDrawData.Rotation, sSpriteDrawData.Scale, sSpriteDrawData.Color);
-
                 foreach (var child in in_UiElement.Children)
-                    DrawCast(in_Scene, child, childTransform, in_Priority++, in_Time, in_Vis);
+                    DrawCast(in_Scene, child, sSpriteDrawData, in_Priority++, in_Time, in_Vis);
             }
 
         }
