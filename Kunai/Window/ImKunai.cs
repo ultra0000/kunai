@@ -3,7 +3,7 @@ using Hexa.NET.ImGui;
 using Hexa.NET.Utilities.Text;
 using IconFonts;
 using Kunai.ShurikenRenderer;
-using OpenTK.Graphics.OpenGL;
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -74,9 +74,9 @@ namespace Kunai
         
         public static void TextFontAwesome(string in_Text)
         {
-            ImGui.PushFont(ImGuiController.FontAwesomeFont);
+            //ImGui.PushFont(ImGuiController.FontAwesomeFont);
             ImGui.Text(in_Text);
-            ImGui.PopFont();
+            //ImGui.PopFont();
         }
         public static STextureSelectorResult TextureSelector(KunaiProject in_Renderer, bool in_EditMode)
         {
@@ -227,12 +227,12 @@ namespace Kunai
             if (iconPresent)
             {
                 //Draw icon
-                ImGui.PushFont(ImGuiController.FontAwesomeFont);
+                //ImGui.PushFont(ImGuiController.FontAwesomeFont);
                 ImGui.SameLine(0, 0);
                 ImGui.SetNextItemAllowOverlap();
                 ImGui.SetCursorScreenPos(p);
                 ImGui.TextColored(in_Icon.Color, in_Icon.Icon);
-                ImGui.PopFont();
+                //ImGui.PopFont();
                 ImGui.SameLine(0, 0);
             }
             else

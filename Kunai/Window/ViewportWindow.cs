@@ -134,7 +134,7 @@ namespace Kunai.Window
                         //Add selection box
                         ImGui.GetWindowDrawList().AddQuad(pTopLeft, pTopRight, pBotRight, pBotLeft, ImGui.ColorConvertFloat4ToU32(new Vector4(0, 0.2f, 1, 1)), 1);
 
-                        if (ImGuiE.IsMouseClicked(0))
+                        if (ImGui.IsMouseClicked(0))
                         {
                             possibleSelections.Add(quad.OriginalData.OriginCast);
                         }

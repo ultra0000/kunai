@@ -1,6 +1,4 @@
 ﻿using Hexa.NET.ImGui;
-using OpenTK.Mathematics;
-using OpenTK.Windowing.Common;
 using Kunai.ShurikenRenderer;
 using Kunai.Window;
 using System.IO;
@@ -10,6 +8,8 @@ using TeamSpettro.SettingsSystem;
 using HekonrayBase;
 using HekonrayBase.Settings;
 using HekonrayBase.Base;
+using System.Numerics;
+using Hexa.NET.GLFW;
 
 
 namespace Kunai
@@ -20,13 +20,13 @@ namespace Kunai
         private KunaiProject KunaiProject => (KunaiProject)Project;
         public static ImGuiWindowFlags WindowFlags = ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoCollapse;
 
-        public MainWindow(Version in_OpenGlVersion, Vector2 in_WindowSize) : base(in_OpenGlVersion, in_WindowSize)
+        public MainWindow(Version in_OpenGlVersion, Vector2Int in_WindowSize) : base(in_OpenGlVersion, in_WindowSize)
         {
             ApplicationName = "Kunai";
             Title = ApplicationName;
         }
 
-        protected override void OnLoad()
+        public override void OnLoad()
         {
             Project = KunaiProject.Instance;
             KunaiProject.SetWindowParameters(this, new System.Numerics.Vector2(ClientSize.X, ClientSize.Y));
@@ -34,7 +34,7 @@ namespace Kunai
             TeamSpettro.Resources.Initialize(Path.Combine(Program.Path, "config.json"));
             
             base.OnLoad();
-
+        
             ImGuiThemeManager.SetTheme(SettingsManager.GetBool("IsDarkThemeEnabled", false));
             // Example #10000 for why ImGui.NET is kinda bad
             // This is to avoid having imgui.ini files in every folder that the program accesses
@@ -60,22 +60,22 @@ namespace Kunai
             KunaiProject.LoadFile(in_Args[0]);
         }
 
-        protected override void OnResize(ResizeEventArgs in_E)
-        {
-            base.OnResize(in_E);
-            if(KunaiProject != null)
-                KunaiProject.ScreenSize = new System.Numerics.Vector2(ClientSize.X, ClientSize.Y);
-        }
-
-        protected override void OnRenderFrame(FrameEventArgs in_E)
+        //protected override void OnResize(ResizeEventArgs in_E)
+        //{
+        //    base.OnResize(in_E);
+        //    if(KunaiProject != null)
+        //        KunaiProject.ScreenSize = new System.Numerics.Vector2(ClientSize.X, ClientSize.Y);
+        //}
+        //
+        public override void OnRenderImGuiFrame()
         {
             if(ShouldRender())
             {
-                base.OnRenderFrame(in_E);
-
-                float deltaTime = (float)(in_E.Time);
+                base.OnRenderImGuiFrame();
+        
+                float deltaTime = (float)(GetDeltaTime());
                 KunaiProject.Render(KunaiProject.WorkProjectCsd, (float)deltaTime);
-
+        
                 if (KunaiProject.IsFileLoaded)
                     Title = ApplicationName + $" - [{KunaiProject.Config.WorkFilePath}]";
                 else

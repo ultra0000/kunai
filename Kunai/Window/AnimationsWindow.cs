@@ -336,7 +336,7 @@ namespace Kunai.Window
                 var groupWidth = size1; // Adjust as needed
 
 
-                ImGui.PushFont(ImGuiController.FontAwesomeFont);
+                //ImGui.PushFont(ImGuiController.FontAwesomeFont);
                 if (ImGui.Button(FontAwesome6.Camera))
                 {
                     renderer.SaveScreenshot();
@@ -361,7 +361,7 @@ namespace Kunai.Window
                 {
                     renderer.Config.Time = 0;
                 }
-                ImGui.PopFont();
+                //ImGui.PopFont();
                 ImGui.EndGroup();
                 AnimList();
                 ImGui.SameLine();

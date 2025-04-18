@@ -61,7 +61,7 @@ namespace Kunai.Window
                 {
                     //Add selection box
                     ImGui.GetWindowDrawList().AddQuad(pTopLeft, pTopRight, pBotRight, pBotLeft, ImGui.ColorConvertFloat4ToU32(new Vector4(1, 0.3f, 0, 1)), 3);
-                    if (ImGuiE.IsMouseClicked(0))
+                    if (ImGui.IsMouseClicked(0))
                     {
                         m_SelectedSpriteIndex = i;
                     }

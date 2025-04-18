@@ -2,7 +2,6 @@
 using HekonrayBase.Base;
 using Hexa.NET.ImGui;
 using Kunai.ShurikenRenderer;
-using OpenTK.Windowing.GraphicsLibraryFramework;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -217,6 +216,7 @@ namespace Kunai.Window
 
                     ImGui.EndMenu();
                 }
+                ImGui.MenuItem(renderer.GetFPS().ToString());
             }
 
             if (UpdateChecker.UpdateAvailable)
@@ -260,18 +260,18 @@ namespace Kunai.Window
         private void ProcessShortcuts(KunaiProject renderer)
         {
             var io = ImGui.GetIO();
-            io.KeyCtrl = ImGuiE.IsKeyDown(Keys.LeftControl);
+            io.KeyCtrl = ImGui.IsKeyDown(ImGuiKey.LeftCtrl);
             if (ImGui.GetIO().KeyCtrl)
             {
                 if (renderer.IsFileLoaded)
                 {
-                    if (ImGuiE.IsKeyTapped(Keys.R))
+                    if (ImGui.IsKeyPressed(ImGuiKey.R))
                         ReloadFile(renderer);
 
-                    if (ImGuiE.IsKeyTapped(Keys.S))
+                    if (ImGui.IsKeyPressed(ImGuiKey.S))
                         SaveFile(renderer);
                 }
-                if (ImGuiE.IsKeyTapped(Keys.O))
+                if (ImGui.IsKeyPressed(ImGuiKey.O))
                     OpenFile(renderer);
                 //if (io.KeyShift)
                 //{

@@ -1,4 +1,6 @@
-﻿using Kunai.ShurikenRenderer;
+﻿using Hexa.NET.OpenGL;
+using Kunai;
+using Kunai.ShurikenRenderer;
 using SharpNeedle;
 using SharpNeedle.Framework.Ninja.Csd;
 using SharpNeedle.Structs;

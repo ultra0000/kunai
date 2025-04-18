@@ -1,5 +1,5 @@
 ﻿using System.IO;
-using OpenTK.Graphics.OpenGL;
+
 using Vector2 = System.Numerics.Vector2;
 using Kunai.ShurikenRenderer;
 using System;
@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Linq;
 using System.Numerics;
+using Kunai;
+using Hexa.NET.OpenGL;
 
 namespace Shuriken.Rendering
 {
@@ -50,7 +52,7 @@ namespace Shuriken.Rendering
             set
             {
                 m_Additive = value;
-                GL.BlendFunc(BlendingFactor.SrcAlpha, m_Additive ? BlendingFactor.One : BlendingFactor.OneMinusSrcAlpha);
+                GLSingle.Ins.BlendFunc(GLBlendingFactor.SrcAlpha, m_Additive ? GLBlendingFactor.One : GLBlendingFactor.OneMinusSrcAlpha);
             }
         }
 
@@ -61,11 +63,11 @@ namespace Shuriken.Rendering
             {
                 m_LinearFiltering = value;
 
-                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter,
-                    m_LinearFiltering ? (int)TextureMinFilter.Linear : (int)TextureMinFilter.Nearest);
+                GLSingle.Ins.TexParameterf(GLTextureTarget.Texture2D, GLTextureParameterName.MinFilter,
+                    m_LinearFiltering ? (int)GLTextureMinFilter.Linear : (int)GLTextureMinFilter.Nearest);
 
-                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter,
-                    m_LinearFiltering ? (int)TextureMagFilter.Linear : (int)TextureMagFilter.Nearest);
+                GLSingle.Ins.TexParameterf(GLTextureTarget.Texture2D, GLTextureParameterName.MagFilter,
+                    m_LinearFiltering ? (int)GLTextureMagFilter.Linear : (int)GLTextureMagFilter.Nearest);
             }
         }
 
@@ -115,37 +117,38 @@ namespace Shuriken.Rendering
             return m_Quads;
         }
 
-        private void Init()
+        private unsafe void Init()
         {
             // 2 floats for pos, 2 floats for UVs, 4 floats for color
             int stride = Unsafe.SizeOf<Vertex>();
 
-            GL.GenVertexArrays(1, out m_Vao);
-            GL.BindVertexArray(m_Vao);
+            GLSingle.Ins.GenVertexArrays(1, ref m_Vao);
+            GLSingle.Ins.BindVertexArray(m_Vao);
 
-            GL.GenBuffers(1, out m_Vbo);
-            GL.GenBuffers(1, out m_Ebo);
+            GLSingle.Ins.GenBuffers(1, ref m_Vbo);
+            GLSingle.Ins.GenBuffers(1, ref m_Ebo);
 
-            GL.BindBuffer(BufferTarget.ArrayBuffer, m_Vbo);
-            GL.BufferData(BufferTarget.ArrayBuffer, MaxVertices, nint.Zero, BufferUsageHint.DynamicDraw);
+            GLSingle.Ins.BindBuffer(GLBufferTargetARB.ArrayBuffer, m_Vbo);
+            GLSingle.Ins.BufferData(GLBufferTargetARB.ArrayBuffer, MaxVertices, null, GLBufferUsageARB.DynamicDraw);
 
-            GL.BindBuffer(BufferTarget.ElementArrayBuffer, m_Ebo);
-            GL.BufferData(BufferTarget.ElementArrayBuffer, MaxIndices, m_Indices, BufferUsageHint.StaticDraw);
+            GLSingle.Ins.BindBuffer(GLBufferTargetARB.ElementArrayBuffer, m_Ebo);
+            fixed(void* data1 = m_Indices)
+                GLSingle.Ins.BufferData(GLBufferTargetARB.ElementArrayBuffer, MaxIndices, data1, GLBufferUsageARB.StaticDraw);
 
             // position
-            GL.EnableVertexAttribArray(0);
-            GL.VertexAttribPointer(0, 2, VertexAttribPointerType.Float, false, stride, 0);
+            GLSingle.Ins.EnableVertexAttribArray(0);
+            GLSingle.Ins.VertexAttribPointer(0, 2, GLVertexAttribPointerType.Float, false, stride, 0);
 
             // uv
-            GL.EnableVertexAttribArray(1);
-            GL.VertexAttribPointer(1, 2, VertexAttribPointerType.Float, false, stride, 2 * sizeof(float));
+            GLSingle.Ins.EnableVertexAttribArray(1);
+            GLSingle.Ins.VertexAttribPointer(1, 2, GLVertexAttribPointerType.Float, false, stride, 2 * sizeof(float));
 
             // color
-            GL.EnableVertexAttribArray(2);
-            GL.VertexAttribPointer(2, 4, VertexAttribPointerType.Float, false, stride, 4 * sizeof(float));
+            GLSingle.Ins.EnableVertexAttribArray(2);
+            GLSingle.Ins.VertexAttribPointer(2, 4, GLVertexAttribPointerType.Float, false, stride, 4 * sizeof(float));
 
-            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
-            GL.BindVertexArray(0);
+            GLSingle.Ins.BindBuffer(GLBufferTargetARB.ArrayBuffer, 0);
+            GLSingle.Ins.BindVertexArray(0);
         }
 
         /// <summary>
@@ -175,10 +178,14 @@ namespace Shuriken.Rendering
         {
             if (BufferPos > 0)
             {
-                GL.BindVertexArray(m_Vao);
-                GL.BindBuffer(BufferTarget.ArrayBuffer, m_Vbo);
-                GL.BindBuffer(BufferTarget.ElementArrayBuffer, m_Ebo);
-                GL.BufferSubData(BufferTarget.ArrayBuffer, nint.Zero, BufferPos * Unsafe.SizeOf<Vertex>(), m_Buffer);
+                GLSingle.Ins.BindVertexArray(m_Vao);
+                GLSingle.Ins.BindBuffer(GLBufferTargetARB.ArrayBuffer, m_Vbo);
+                GLSingle.Ins.BindBuffer(GLBufferTargetARB.ElementArrayBuffer, m_Ebo);
+                unsafe
+                {
+                    fixed(void* buffer = m_Buffer)
+                        GLSingle.Ins.BufferSubData(GLBufferTargetARB.ArrayBuffer, nint.Zero, BufferPos * Unsafe.SizeOf<Vertex>(), buffer);
+                }
                 Flush();
             }
 
@@ -187,7 +194,7 @@ namespace Shuriken.Rendering
 
         private void Flush()
         {
-            GL.DrawElements(PrimitiveType.Triangles, NumIndices, DrawElementsType.UnsignedInt, 0);
+            GLSingle.Ins.DrawElements(GLPrimitiveType.Triangles, NumIndices, GLDrawElementsType.UnsignedInt, 0);
         }
 
         /// <summary>
@@ -335,7 +342,7 @@ namespace Shuriken.Rendering
         {
             m_Quads.Clear();
 
-            GL.ActiveTexture(TextureUnit.Texture0);
+            GLSingle.Ins.ActiveTexture(GLTextureUnit.Texture0);
             BeginBatch();
         }
 
@@ -347,7 +354,10 @@ namespace Shuriken.Rendering
 
             foreach (var quad in m_Quads)
             {
-                int id = quad.Texture?.GlTex?.Id ?? -1;
+                int id = -1;
+                uint glId = quad.Texture?.GlTex?.Id ?? uint.MaxValue;
+                if (glId != uint.MaxValue)
+                    id = (int)glId;
 
                 if (id != TextureId || Additive != quad.Additive || LinearFiltering != quad.LinearFiltering || NumVertices >= MaxVertices)
                 {
@@ -356,7 +366,7 @@ namespace Shuriken.Rendering
 
                     quad.Texture?.GlTex?.Bind();
 
-                    TextureId = id;
+                    TextureId = (int)id;
                     Additive = quad.Additive;
                     LinearFiltering = quad.LinearFiltering;
                 }

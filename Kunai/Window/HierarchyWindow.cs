@@ -113,7 +113,7 @@ namespace Kunai.Window
                 ms_SearchBox.Render();
 
                 ImGui.BeginDisabled(true);
-                ImGui.PushFont(ImGuiController.FontAwesomeFont);
+                //ImGui.PushFont(ImGuiController.FontAwesomeFont);
                 Vector2 size = new Vector2(24, 24);
                 if (ImGui.Button(NodeIconResource.SceneNode.Icon, size))
                 {
@@ -139,7 +139,7 @@ namespace Kunai.Window
                 {
 
                 }
-                ImGui.PopFont();
+                //ImGui.PopFont();
                 ImGui.EndDisabled();
                 ImKunai.ItemRowsBackground(new Vector4(20, 20, 20, 64));
                 if(ImKunai.BeginListBoxCustom("##hierarchylist", new Vector2(-1,-1)))

@@ -4,14 +4,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using OpenTK.Graphics.OpenGL;
-using OpenTK.Mathematics;
+using Hexa.NET.OpenGL;
 
 namespace Kunai.ShurikenRenderer
 {
     public class ShaderProgram
     {
-        public int Id { get; private set; } = 0;
+        public uint Id { get; private set; } = 0;
         public string Name { get; private set; }
 
         /// <summary>
@@ -37,58 +36,58 @@ namespace Kunai.ShurikenRenderer
             };
 
             // Create shaders
-            int vertexShader = GL.CreateShader(ShaderType.VertexShader);
-            GL.ShaderSource(vertexShader, vertexSource);
-            GL.CompileShader(vertexShader);
+            uint vertexShader = GLSingle.Ins.CreateShader(GLShaderType.VertexShader);
+            GLSingle.Ins.ShaderSource(vertexShader, vertexSource);
+            GLSingle.Ins.CompileShader(vertexShader);
 
-            string vLog = GL.GetShaderInfoLog(vertexShader);
+            string vLog = GLSingle.Ins.GetShaderInfoLog(vertexShader);
             if (!string.IsNullOrEmpty(vLog))
                 Console.WriteLine(vLog);
 
-            int fragmentShader = GL.CreateShader(ShaderType.FragmentShader);
-            GL.ShaderSource(fragmentShader, fragmentSource);
-            GL.CompileShader(fragmentShader);
+            uint fragmentShader = GLSingle.Ins.CreateShader(GLShaderType.FragmentShader);
+            GLSingle.Ins.ShaderSource(fragmentShader, fragmentSource);
+            GLSingle.Ins.CompileShader(fragmentShader);
 
-            string fLog = GL.GetShaderInfoLog(fragmentShader);
+            string fLog = GLSingle.Ins.GetShaderInfoLog(fragmentShader);
             if (!string.IsNullOrEmpty(fLog))
                 Console.WriteLine(fLog);
 
             // Link shaders to program
-            Id = GL.CreateProgram();
-            GL.AttachShader(Id, vertexShader);
-            GL.AttachShader(Id, fragmentShader);
-            GL.LinkProgram(Id);
+            Id = GLSingle.Ins.CreateProgram();
+            GLSingle.Ins.AttachShader(Id, vertexShader);
+            GLSingle.Ins.AttachShader(Id, fragmentShader);
+            GLSingle.Ins.LinkProgram(Id);
 
             // Cleanup
-            GL.DetachShader(Id, vertexShader);
-            GL.DetachShader(Id, fragmentShader);
-            GL.DeleteShader(vertexShader);
-            GL.DeleteShader(fragmentShader);
+            GLSingle.Ins.DetachShader(Id, vertexShader);
+            GLSingle.Ins.DetachShader(Id, fragmentShader);
+            GLSingle.Ins.DeleteShader(vertexShader);
+            GLSingle.Ins.DeleteShader(fragmentShader);
         }
 
         public void SetUniform(string in_Attribute, int in_Value)
         {
-            GL.Uniform1(GL.GetUniformLocation(Id, in_Attribute), in_Value);
+            GLSingle.Ins.Uniform1i(GLSingle.Ins.GetUniformLocation(Id, in_Attribute), in_Value);
         }
 
         public void SetUniform(string in_Attribute, float in_Value)
         {
-            GL.Uniform1(GL.GetUniformLocation(Id, in_Attribute), in_Value);
+            GLSingle.Ins.Uniform1f(GLSingle.Ins.GetUniformLocation(Id, in_Attribute), in_Value);
         }
 
-        public void SetMatrix4(string in_Name, Matrix4 in_Mat)
+        public void SetMatrix4(string in_Name, HekonrayBase.Mathematics.Matrix3 in_Mat)
         {
-            GL.UniformMatrix4(GL.GetUniformLocation(Id, in_Name), true, ref in_Mat);
+            //GLSingle.Ins.UniformMatrix4fv(GLSingle.Ins.GetUniformLocation(Id, in_Name), true, ref in_Mat);
         }
 
         public void SetBool(string in_Name, bool in_Value)
         {
-            GL.Uniform1(GL.GetUniformLocation(Id, in_Name), in_Value ? 1 : 0);
+            GLSingle.Ins.Uniform1i(GLSingle.Ins.GetUniformLocation(Id, in_Name), in_Value ? 1 : 0);
         }
 
         public void Use()
         {
-            GL.UseProgram(Id);
+            GLSingle.Ins.UseProgram(Id);
         }
 
         public ShaderProgram(string in_Name, string in_VertexPath, string in_FragmentPath)

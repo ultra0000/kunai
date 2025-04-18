@@ -7,8 +7,6 @@ using HekonrayBase;
 using HekonrayBase.Base;
 using Kunai.Window;
 using libWiiSharp;
-using OpenTK.Graphics.OpenGL;
-using OpenTK.Windowing.Desktop;
 using SharpNeedle.Framework.Ninja;
 using SharpNeedle.Framework.Ninja.Csd;
 using SharpNeedle.IO;
@@ -29,9 +27,8 @@ using System.Runtime.InteropServices;
 using System.Text;
 using SharpNeedle.Framework.Ninja.Csd.Motions;
 using TeamSpettro.SettingsSystem;
-using PixelFormat = OpenTK.Graphics.OpenGL.PixelFormat;
-using OpenTK.Windowing.GraphicsLibraryFramework;
 using Image = SixLabors.ImageSharp.Image;
+using Hexa.NET.OpenGL;
 
 namespace Kunai.ShurikenRenderer
 {
@@ -51,14 +48,8 @@ namespace Kunai.ShurikenRenderer
         private SViewportData m_ViewportData;
         private HekonrayWindow m_Window;
         private bool m_SaveScreenshotWhenRendered;
+        private float m_DeltaTime;
 
-        public KeyboardState KeyboardState
-        {
-            get
-            {
-                return m_Window.KeyboardState;
-            }
-        }
         public bool IsFileLoaded
         {
             get
@@ -322,6 +313,10 @@ namespace Kunai.ShurikenRenderer
             }
         }
 
+        public double GetFPS()
+        {
+            return Math.Round(1.0 / m_DeltaTime);
+        }
         /// <summary>
         /// Renders contents of a CsdProject to a GL texture for use in ImGui.
         /// (NOTE: if anyone wants to improve this, feel free to do so, it sucks.)
@@ -331,6 +326,7 @@ namespace Kunai.ShurikenRenderer
         /// <exception cref="Exception"></exception>
         public void Render(CsdProject in_CsdProject, float in_DeltaTime)
         {
+            m_DeltaTime = in_DeltaTime;
             if (ViewportColor.X == -1)
             {
                 ViewportColor.X = SettingsManager.GetFloat("ViewColor_X", 0.6627450980f);
@@ -344,17 +340,17 @@ namespace Kunai.ShurikenRenderer
             bool isSavingScreenshot = m_SaveScreenshotWhenRendered;
 
             Vector2 wsize = ScreenSize;
-            OpenTK.Mathematics.Vector2i wsizei;
+            Vector2Int wsizei;
             ManageRenderTexture(isSavingScreenshot, wsize, out wsizei);
 
-            GL.Enable(EnableCap.Blend);
+            GLSingle.Ins.Enable(GLEnableCap.Blend);
             //eventually set to transparent in case its a screenshot
             if (IsFileLoaded)
-                GL.ClearColor(ViewportColor.X, ViewportColor.Y, ViewportColor.Z, 1);
+                GLSingle.Ins.ClearColor(ViewportColor.X, ViewportColor.Y, ViewportColor.Z, 1);
             else
-                GL.ClearColor(ViewportColor.X / 3, ViewportColor.Y / 3, ViewportColor.Z / 3, 1);
+                GLSingle.Ins.ClearColor(ViewportColor.X / 3, ViewportColor.Y / 3, ViewportColor.Z / 3, 1);
 
-            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+            GLSingle.Ins.Clear(GLClearBufferMask.ColorBufferBit | GLClearBufferMask.DepthBufferBit);
 
             //Actually render the file
             if (in_CsdProject != null)
@@ -365,7 +361,11 @@ namespace Kunai.ShurikenRenderer
             {
                 //Save framebuffer to a pixel buffer
                 byte[] buffer = new byte[wsizei.X * wsizei.Y * 4];
-                GL.ReadPixels(0, 0, wsizei.X, wsizei.Y, PixelFormat.Rgba, PixelType.UnsignedByte, buffer);
+                unsafe
+                {
+                fixed(void* buf = buffer)
+                    GLSingle.Ins.ReadPixels(0, 0, wsizei.X, wsizei.Y, GLPixelFormat.Rgba, GLPixelType.UnsignedByte, buf);
+                }
 
                 Image<Rgba32> screenshot =
                     Image.LoadPixelData<Rgba32>(buffer, wsizei.X, wsizei.Y);
@@ -385,13 +385,13 @@ namespace Kunai.ShurikenRenderer
                 m_SaveScreenshotWhenRendered = false;
             }
             // unbind our bo so nothing else uses it
-            GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
-            GL.Viewport(0, 0, m_Window.ClientSize.X, m_Window.ClientSize.Y); // back to full screen size
+            GLSingle.Ins.BindFramebuffer(GLFramebufferTarget.Framebuffer, 0);
+            GLSingle.Ins.Viewport(0, 0, m_Window.ClientSize.X, m_Window.ClientSize.Y); // back to full screen size
 
             UpdateWindows();
         }
 
-        private void ManageRenderTexture(bool isSavingScreenshot, Vector2 wsize, out OpenTK.Mathematics.Vector2i wsizei)
+        private void ManageRenderTexture(bool isSavingScreenshot, Vector2 wsize, out Vector2Int wsizei)
         {
             wsizei = new((int)wsize.X, (int)wsize.Y);
             if (m_ViewportData.FramebufferSize != wsizei || isSavingScreenshot)
@@ -401,60 +401,60 @@ namespace Kunai.ShurikenRenderer
                 // create our frame buffer if needed
                 if (m_ViewportData.FramebufferHandle == 0)
                 {
-                    m_ViewportData.FramebufferHandle = GL.GenFramebuffer();
+                    m_ViewportData.FramebufferHandle = GLSingle.Ins.GenFramebuffer();
                     // bind our frame buffer
-                    GL.BindFramebuffer(FramebufferTarget.Framebuffer, m_ViewportData.FramebufferHandle);
-                    GL.ObjectLabel(ObjectLabelIdentifier.Framebuffer, m_ViewportData.FramebufferHandle, 10, "GameWindow");
+                    GLSingle.Ins.BindFramebuffer(GLFramebufferTarget.Framebuffer, m_ViewportData.FramebufferHandle);
+                    //GLSingle.Ins.ObjectLabel(ObjectLabelIdentifier.Framebuffer, m_ViewportData.FramebufferHandle, 10, "GameWindow");
                 }
 
                 // bind our frame buffer
-                GL.BindFramebuffer(FramebufferTarget.Framebuffer, m_ViewportData.FramebufferHandle);
+                GLSingle.Ins.BindFramebuffer(GLFramebufferTarget.Framebuffer, m_ViewportData.FramebufferHandle);
 
                 if (m_ViewportData.CsdRenderTextureHandle > 0)
-                    GL.DeleteTexture(m_ViewportData.CsdRenderTextureHandle);
+                    GLSingle.Ins.DeleteTexture(m_ViewportData.CsdRenderTextureHandle);
 
-                m_ViewportData.CsdRenderTextureHandle = GL.GenTexture();
-                GL.BindTexture(TextureTarget.Texture2D, m_ViewportData.CsdRenderTextureHandle);
-                GL.ObjectLabel(ObjectLabelIdentifier.Texture, m_ViewportData.CsdRenderTextureHandle, 16, "GameWindow:Color");
+                m_ViewportData.CsdRenderTextureHandle = GLSingle.Ins.GenTexture();
+                GLSingle.Ins.BindTexture(GLTextureTarget.Texture2D, m_ViewportData.CsdRenderTextureHandle);
+                //GLSingle.Ins.ObjectLabel(ObjectLabelIdentifier.Texture, m_ViewportData.CsdRenderTextureHandle, 16, "GameWindow:Color");
                 //IMPORTANT!
                 //Rgba for screenshots, rgb for everything else
-                var pixelInternalFormat = isSavingScreenshot ? PixelInternalFormat.Rgba : PixelInternalFormat.Rgb;
-                var pixelFormat = isSavingScreenshot ? PixelFormat.Rgba : PixelFormat.Rgb;
-                GL.TexImage2D(TextureTarget.Texture2D, 0, pixelInternalFormat, wsizei.X, wsizei.Y, 0, pixelFormat, PixelType.UnsignedByte, IntPtr.Zero);
-                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
-                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
-                GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0, TextureTarget.Texture2D, m_ViewportData.CsdRenderTextureHandle, 0);
+                var pixelInternalFormat = isSavingScreenshot ? GLInternalFormat.Rgba : GLInternalFormat.Rgb;
+                var pixelFormat = isSavingScreenshot ? GLPixelFormat.Rgba : GLPixelFormat.Rgb;
+                GLSingle.Ins.TexImage2D(GLTextureTarget.Texture2D, 0, pixelInternalFormat, wsizei.X, wsizei.Y, 0, pixelFormat, GLPixelType.UnsignedByte, IntPtr.Zero);
+                GLSingle.Ins.TexParameterf(GLTextureTarget.Texture2D, GLTextureParameterName.MinFilter, (int)GLTextureMinFilter.Linear);
+                GLSingle.Ins.TexParameterf(GLTextureTarget.Texture2D, GLTextureParameterName.MagFilter, (int)GLTextureMagFilter.Linear);
+                GLSingle.Ins.FramebufferTexture2D(GLFramebufferTarget.Framebuffer, GLFramebufferAttachment.ColorAttachment0, GLTextureTarget.Texture2D, m_ViewportData.CsdRenderTextureHandle, 0);
 
                 if (m_ViewportData.RenderbufferHandle > 0)
-                    GL.DeleteRenderbuffer(m_ViewportData.RenderbufferHandle);
+                    GLSingle.Ins.DeleteRenderbuffer(m_ViewportData.RenderbufferHandle);
 
-                m_ViewportData.RenderbufferHandle = GL.GenRenderbuffer();
-                GL.BindRenderbuffer(RenderbufferTarget.Renderbuffer, m_ViewportData.RenderbufferHandle);
-                GL.ObjectLabel(ObjectLabelIdentifier.Renderbuffer, m_ViewportData.RenderbufferHandle, 16, "GameWindow:Depth");
-                GL.RenderbufferStorage(RenderbufferTarget.Renderbuffer, RenderbufferStorage.DepthComponent32f, wsizei.X, wsizei.Y);
+                m_ViewportData.RenderbufferHandle = GLSingle.Ins.GenRenderbuffer();
+                GLSingle.Ins.BindRenderbuffer(GLRenderbufferTarget.Renderbuffer, m_ViewportData.RenderbufferHandle);
+                //GLSingle.Ins.ObjectLabel(ObjectLabelIdentifier.Renderbuffer, m_ViewportData.RenderbufferHandle, 16, "GameWindow:Depth");
+                GLSingle.Ins.RenderbufferStorage(GLRenderbufferTarget.Renderbuffer, GLInternalFormat.DepthComponent32F, wsizei.X, wsizei.Y);
 
-                GL.FramebufferRenderbuffer(FramebufferTarget.Framebuffer, FramebufferAttachment.DepthAttachment, RenderbufferTarget.Renderbuffer, m_ViewportData.RenderbufferHandle);
-                //GL.BindRenderbuffer(RenderbufferTarget.Renderbuffer, 0);
+                GLSingle.Ins.FramebufferRenderbuffer(GLFramebufferTarget.Framebuffer, GLFramebufferAttachment.DepthAttachment, GLRenderbufferTarget.Renderbuffer, m_ViewportData.RenderbufferHandle);
+                //GLSingle.Ins.BindRenderbuffer(RenderbufferTarget.Renderbuffer, 0);
 
-                //texDepth = GL.GenTexture();
-                //GL.BindTexture(TextureTarget.Texture2D, texDepth);
-                //GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.DepthComponent32f, 800, 600, 0, PixelFormat.DepthComponent, PixelType.Float, IntPtr.Zero);
-                //GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.DepthAttachment, TextureTarget.Texture2D, texDepth, 0);
+                //texDepth = GLSingle.Ins.GenTexture();
+                //GLSingle.Ins.BindTexture(GLTextureTarget.Texture2D, texDepth);
+                //GLSingle.Ins.TexImage2D(GLTextureTarget.Texture2D, 0, PixelInternalFormat.DepthComponent32f, 800, 600, 0, PixelFormat.DepthComponent, PixelType.Float, IntPtr.Zero);
+                //GLSingle.Ins.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.DepthAttachment, GLTextureTarget.Texture2D, texDepth, 0);
 
                 // make sure the frame buffer is complete
-                FramebufferErrorCode errorCode = GL.CheckFramebufferStatus(FramebufferTarget.Framebuffer);
-                if (errorCode == FramebufferErrorCode.FramebufferIncompleteAttachment)
+                GLFramebufferStatus errorCode = (GLFramebufferStatus)GLSingle.Ins.CheckFramebufferStatus(GLFramebufferTarget.Framebuffer);
+                if (errorCode == GLFramebufferStatus.IncompleteAttachment)
                     return;
-                if (errorCode != FramebufferErrorCode.FramebufferComplete)
+                if (errorCode != GLFramebufferStatus.Complete)
                     throw new Exception();
             }
             else
             {
                 // bind our frame and depth buffer
-                GL.BindFramebuffer(FramebufferTarget.Framebuffer, m_ViewportData.FramebufferHandle);
-                GL.BindRenderbuffer(RenderbufferTarget.Renderbuffer, m_ViewportData.RenderbufferHandle);
+                GLSingle.Ins.BindFramebuffer(GLFramebufferTarget.Framebuffer, m_ViewportData.FramebufferHandle);
+                GLSingle.Ins.BindRenderbuffer(GLRenderbufferTarget.Renderbuffer, m_ViewportData.RenderbufferHandle);
             }
-            GL.Viewport(0, 0, wsizei.X, wsizei.Y); // change the viewport to window
+            GLSingle.Ins.Viewport(0, 0, wsizei.X, wsizei.Y); // change the viewport to window
                                                    // actually draw the scene
         }
 
@@ -770,7 +770,7 @@ namespace Kunai.ShurikenRenderer
                 in_SSpriteDrawData.GradientTopRight = new Vector4(1, 1, 1, 1);
         }
 
-        public int GetViewportImageHandle()
+        public uint GetViewportImageHandle()
         {
             return m_ViewportData.CsdRenderTextureHandle;
         }

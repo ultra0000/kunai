@@ -1,7 +1,7 @@
 ﻿using HekonrayBase;
-using OpenTK.Mathematics;
 using System;
 using System.IO;
+using System.Numerics;
 using System.Threading.Tasks;
 
 namespace Kunai
@@ -17,7 +17,7 @@ namespace Kunai
             Application.LaunchArguments = in_Args;
             Task.Run(UpdateChecker.CheckUpdate);
 
-            MainWindow mainWindow = new MainWindow(new Version(3,3), new Vector2(1600, 900));
+            MainWindow mainWindow = new MainWindow(new Version(3,3), new Vector2Int(1600, 900));
             mainWindow.Run();
         }
     }
