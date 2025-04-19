@@ -846,9 +846,9 @@ namespace Kunai.ShurikenRenderer
             KunaiProjectFile file = new KunaiProjectFile();
             CsdPlugin plugin = new CsdPlugin();
             file = plugin.Import("");
-            file.Write("C:\\Users\\NextinHKRY\\Desktop\\output.json");
+            file.Write("F:\\output.json");
             var f = plugin.Export(file);
-            f.Write("C:\\Users\\NextinHKRY\\Desktop\\output.xncp");
+            f.Write("F:\\output.xncp");
             List<Sprite> subImageList = new();
             List<Vector2> sizes = new List<Vector2>();
             SpriteHelper.BuildCropList(ref subImageList, ref sizes);
