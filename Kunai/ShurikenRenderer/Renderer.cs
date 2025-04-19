@@ -1,5 +1,4 @@
 ﻿using System.IO;
-
 using Vector2 = System.Numerics.Vector2;
 using Kunai.ShurikenRenderer;
 using System;

@@ -28,6 +28,9 @@ using SharpNeedle.Framework.Ninja.Csd.Motions;
 using TeamSpettro.SettingsSystem;
 using Image = SixLabors.ImageSharp.Image;
 using Hexa.NET.OpenGL;
+using System.Xml.Serialization;
+using System.Xml;
+using Kunai.Generic;
 
 namespace Kunai.ShurikenRenderer
 {
@@ -156,7 +159,7 @@ namespace Kunai.ShurikenRenderer
                             {
                                 if(mirageTex.Data.Length != 0)
                                 {
-                                    SpriteHelper.Textures.Add(new Texture("", mirageTex.Data));
+                                    SpriteHelper.Textures.Add(new Texture($"texture{SpriteHelper.Textures.Count}", mirageTex.Data));
                                     continue;
                                 }
                             }
@@ -325,7 +328,6 @@ namespace Kunai.ShurikenRenderer
                 }
             }
         }
-
         public double GetFPS()
         {
             return Math.Round(1.0 / m_DeltaTime);
@@ -468,7 +470,6 @@ namespace Kunai.ShurikenRenderer
                 GLSingle.Ins.BindRenderbuffer(GLRenderbufferTarget.Renderbuffer, m_ViewportData.RenderbufferHandle);
             }
             GLSingle.Ins.Viewport(0, 0, wsizei.X, wsizei.Y); // change the viewport to window
-                                                   // actually draw the scene
         }
 
         private void RenderToViewport(CsdProject in_CsdProject, float in_DeltaTime, bool in_ScreenshotMode)
@@ -842,6 +843,12 @@ namespace Kunai.ShurikenRenderer
         }
         public void SaveCurrentFile(string in_Path)
         {
+            KunaiProjectFile file = new KunaiProjectFile();
+            CsdPlugin plugin = new CsdPlugin();
+            file = plugin.Import("");
+            file.Write("C:\\Users\\NextinHKRY\\Desktop\\output.json");
+            var f = plugin.Export(file);
+            f.Write("C:\\Users\\NextinHKRY\\Desktop\\output.xncp");
             List<Sprite> subImageList = new();
             List<Vector2> sizes = new List<Vector2>();
             SpriteHelper.BuildCropList(ref subImageList, ref sizes);
