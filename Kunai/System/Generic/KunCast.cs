@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Kunai.Generic
 {
-    public struct KunCast
+    public class KunCast
     {
         public string Name;
         public int Type;
@@ -32,6 +32,7 @@ namespace Kunai.Generic
         public int CropIndex;
         public int[] UsableCropIndices;
         public List<KunCast> Children = new List<KunCast>();
+        public List<KunCastMotion> Animations = new List<KunCastMotion>();
         public KunExtension? Extension;
 
         public KunCast()

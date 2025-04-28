@@ -31,6 +31,7 @@ using Hexa.NET.OpenGL;
 using System.Xml.Serialization;
 using System.Xml;
 using Kunai.Generic;
+using System.Reflection;
 
 namespace Kunai.ShurikenRenderer
 {
@@ -102,8 +103,10 @@ namespace Kunai.ShurikenRenderer
         {
             try
             {
+                if (!File.Exists(in_Path))
+                    return;
                 ResetCsd();
-                bool isSplitFile = IsPathSplitFile(in_Path);
+                bool isSplitFile = IsPathSplitFile(@in_Path);
                 //Reset what needs to be reset
                 string root = Path.GetDirectoryName(Path.GetFullPath(@in_Path));
                 SpriteHelper.ClearTextures();
@@ -231,7 +234,7 @@ namespace Kunai.ShurikenRenderer
         /// </summary>
         /// <param name="in_Path">Path to file</param>
         /// <returns></returns>
-        private bool IsPathSplitFile(string in_Path)
+        private bool IsPathSplitFile(string @in_Path)
         {
             BinaryObjectReader reader = new BinaryObjectReader(in_Path, Endianness.Little, Encoding.UTF8);
             uint sig = reader.ReadNative<uint>();
@@ -846,14 +849,18 @@ namespace Kunai.ShurikenRenderer
             KunaiProjectFile file = new KunaiProjectFile();
             CsdPlugin plugin = new CsdPlugin();
             file = plugin.Import("");
-            file.Write("F:\\output.json");
-            var f = plugin.Export(file);
-            f.Write("F:\\output.xncp");
-            List<Sprite> subImageList = new();
-            List<Vector2> sizes = new List<Vector2>();
-            SpriteHelper.BuildCropList(ref subImageList, ref sizes);
-            RecursiveSetCropListNode(WorkProjectCsd.Project.Root, subImageList, sizes);
+
+            //List<Sprite> subImageList = new();
+            //List<Vector2> sizes = new List<Vector2>();
+            //SpriteHelper.BuildCropList(ref subImageList, ref sizes);
+            //RecursiveSetCropListNode(WorkProjectCsd.Project.Root, subImageList, sizes);
             string filePath = string.IsNullOrEmpty(in_Path) ? Config.WorkFilePath : in_Path;
+
+            var tempFolder = Directory.GetParent(filePath).FullName;
+
+            file.Write(Path.Combine(tempFolder, "output.json"));
+            var f = plugin.Export(file);
+            f.Write(Path.Combine(tempFolder, "output.xncp"));
             switch (GetFileType(filePath))
             {
                 case EFileType.CsdXncp:
@@ -870,7 +877,7 @@ namespace Kunai.ShurikenRenderer
             
                     }
             }
-            VisibilityData.Apply();
+            //VisibilityData.Apply();
             WorkProjectCsd.Write(filePath);
         }
 

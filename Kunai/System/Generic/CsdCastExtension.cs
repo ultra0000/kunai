@@ -18,6 +18,7 @@ namespace Kunai.Generic
         public Vector2 TopRight { get; set; }
         public Vector2 BottomRight { get; set; }
         public Vector2 CseSize;
+        public Vector2 CsePosition;
         public uint Field58 { get; set; }
         public uint Field5C { get; set; }
         public uint Field70 { get; set; }
@@ -39,6 +40,7 @@ namespace Kunai.Generic
             Field58 = in_Cast.Field58;
             Field5C = in_Cast.Field5C;
             Field70 = in_Cast.Field70;
+            CsePosition = in_Cast.Position;
         }
     }
 }

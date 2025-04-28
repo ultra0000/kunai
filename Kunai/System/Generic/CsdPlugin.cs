@@ -16,7 +16,8 @@ namespace Kunai.Generic
         {
             CsdProject proj = new CsdProject();
             var projChunk = new ProjectChunk();
-
+            projChunk.Field08 = in_File.Field08;
+            projChunk.Field0C = in_File.Field0C;
             projChunk.Name = in_File.Name;
             projChunk.TextureFormat = in_File.TextureFormat;
 
@@ -134,7 +135,7 @@ namespace Kunai.Generic
             return castMotion;
         }
 
-        public Motion ExportMotion(KunMotion xmlMotion)
+        public Motion ExportMotion(KunMotion xmlMotion, KunScene xmlScene)
         {
             var motion = new Motion
             {
@@ -142,21 +143,15 @@ namespace Kunai.Generic
                 EndFrame = xmlMotion.EndFrame,
                 FamilyMotions = new List<FamilyMotion>()
             };
-
-            foreach (var xmlFamily in xmlMotion.CastMotions)
+            foreach(var f in xmlScene.Casts)
             {
-                var family = new FamilyMotion();
-                foreach (var xmlCast in xmlFamily)
-                {
-                    family.CastMotions.Add(ExportCastMot(xmlCast));
-                }
-                motion.FamilyMotions.Add(family);
+                motion.FamilyMotions.Add(new FamilyMotion());
             }
 
             return motion;
         }
 
-        public Cast ExportCast(KunCast xmlCast)
+        public Cast ExportCast(KunCast xmlCast, Scene in_Scene, int in_FamilyIdx)
         {
             var cast = new Cast
             {
@@ -169,13 +164,14 @@ namespace Kunai.Generic
                 InheritanceFlags = (uint)(xmlCast.InheritanceFlags),
                 MaterialFlags = (uint)(xmlCast.MaterialFlags),
                 SpriteIndices = xmlCast.UsableCropIndices,
+                Position = xmlCast.Extension.GetExtensionAs<CsdCastExtension>().CsePosition,
                 Info = new CastInfo
                 {
                     Translation = xmlCast.Translation,
                     Scale = xmlCast.Scale,
                     Rotation = xmlCast.Rotation,
                     HideFlag = xmlCast.Hidden ? 1u : 0u,
-                    SpriteIndex = (uint)xmlCast.CropIndex,
+                    SpriteIndex = xmlCast.CropIndex,
                     UserData0 = (uint)xmlCast.UserData[0],
                     UserData1 = (uint)xmlCast.UserData[1],
                     UserData2 = (uint)xmlCast.UserData[2],
@@ -187,9 +183,21 @@ namespace Kunai.Generic
                 }
             };
 
+            foreach (var anim in xmlCast.Animations)
+            {
+                foreach (var c in in_Scene.Motions)
+                {
+                    if (c.Key == anim.AnimationName)
+                    {
+                        var exp = ExportCastMot(anim);
+                        cast.AttachMotion(exp);
+                        in_Scene.Motions[c.Key].FamilyMotions[in_FamilyIdx].CastMotions.Add(exp);
+                    }
+                }
+            }
             foreach (var child in xmlCast.Children)
             {
-                cast.Children.Add(ExportCast(child));
+                cast.Children.Add(ExportCast(child, in_Scene, in_FamilyIdx));
             }
             if(xmlCast.Extension is CsdCastExtension ext)
             {
@@ -218,23 +226,27 @@ namespace Kunai.Generic
                 AspectRatio = xmlScene.AspectRatio
             };
 
-            foreach (var xmlFamily in xmlScene.Casts)
+
+            foreach (var motion in xmlScene.Motions)
             {
+                var mot = ExportMotion(motion, xmlScene);
+                scene.Motions.Add(motion.Name, mot);
+            }
+            for (int i = 0; i < xmlScene.Casts.Count; i++)
+            {
+                List<KunCast> xmlFamily = xmlScene.Casts[i];
                 var family = new Family();
                 if (xmlFamily.Count > 0)
                 {
-                    var cast = ExportCast(xmlFamily[0]);
+                    var cast = ExportCast(xmlFamily[0], scene, i);
                     family.Add(cast);
                 }
                 family.Scene = scene;
                 scene.Families.Add(family);
             }
-
-            foreach (var motion in xmlScene.Motions)
+            foreach(var mot in scene.Motions)
             {
-                var mot = ExportMotion(motion);
-                mot.Attach(scene);
-                scene.Motions.Add(motion.Name, mot);
+                mot.Value.Attach(scene);
             }
             if(xmlScene.Extension is CsdSceneExtension ext)
             {
@@ -299,9 +311,10 @@ namespace Kunai.Generic
             }
             return node;
         }
-        public KunCastMotion ImportCastMot(CastMotion in_Mot)
+        public KunCastMotion ImportCastMot(string in_MotName, CastMotion in_Mot)
         {
             KunCastMotion node = new();
+            node.AnimationName = in_MotName;
             node.Flags = in_Mot.Flags.Value;
             node.Tracks = new List<KunTrack>();
             foreach (KeyFrameList track in in_Mot)
@@ -315,20 +328,10 @@ namespace Kunai.Generic
             KunMotion node = new KunMotion();
             node.Name = in_Name;
             node.StartFrame = in_Mot.StartFrame;
-            node.EndFrame = in_Mot.EndFrame;
-            node.CastMotions = new List<List<KunCastMotion>>();
-            foreach (FamilyMotion fam in in_Mot.FamilyMotions)
-            {
-                var famMot = new List<KunCastMotion>();
-                foreach (CastMotion castMot in fam.CastMotions)
-                {
-                    famMot.Add(ImportCastMot(castMot));
-                }
-                node.CastMotions.Add(famMot);
-            }
+            node.EndFrame = in_Mot.EndFrame;            
             return node;
         }
-        public KunCast ImportCast(string in_Name, Cast in_Cast)
+        public KunCast ImportCast(string in_Name, Cast in_Cast, Scene in_ParentScene)
         {
             KunCast node = new KunCast();
             node.Name = in_Name;
@@ -357,9 +360,22 @@ namespace Kunai.Generic
 
             var ext = new CsdCastExtension(in_Cast);
             node.Extension = ext;
+            foreach(var in_Mot in in_ParentScene.Motions)
+            {
+                foreach (FamilyMotion fam in in_Mot.Value.FamilyMotions)
+                {
+                    foreach (CastMotion castMot in fam.CastMotions)
+                    {
+                        if(castMot.Cast == in_Cast)
+                        {
+                            node.Animations.Add(ImportCastMot(in_Mot.Key, castMot));
+                        }
+                    }
+                }
+            }            
             foreach (var c in in_Cast.Children)
             {
-                node.Children.Add(ImportCast(c.Name, c));
+                node.Children.Add(ImportCast(c.Name, c, in_ParentScene));
             }
             return node;
         }
@@ -374,7 +390,7 @@ namespace Kunai.Generic
             foreach (var family in in_Scene.Families)
             {
                 List<KunCast> kFamily = new List<KunCast>();
-                kFamily.Add(ImportCast(family.Casts[0].Name, family.Casts[0]));
+                kFamily.Add(ImportCast(family.Casts[0].Name, family.Casts[0], in_Scene));
                 node.Casts.Add(kFamily);
             }
             node.Motions = new List<KunMotion>();
@@ -438,6 +454,8 @@ namespace Kunai.Generic
             KunaiProjectFile file = new KunaiProjectFile();
             var projChunk = in_Project.Project;
             file.Name = projChunk.Name;
+            file.Field08 = projChunk.Field08;
+            file.Field0C = projChunk.Field0C;
             file.TextureFormat = projChunk.TextureFormat;
 
             file.Nodes.Clear();

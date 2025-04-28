@@ -11,7 +11,6 @@ namespace Kunai.Generic
     {
         public string Name;
         public float StartFrame;
-        public float EndFrame;
-        public List<List<KunCastMotion>> CastMotions;        
+        public float EndFrame;   
     }
 }

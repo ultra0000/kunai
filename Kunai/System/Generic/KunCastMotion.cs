@@ -9,7 +9,8 @@ namespace Kunai.Generic
 {
     public struct KunCastMotion
     {
+        public string AnimationName;
         public uint Flags;
-        public List<KunTrack> Tracks;        
+        public List<KunTrack> Tracks;
     }
 }
