@@ -40,7 +40,7 @@ namespace Kunai.Window
                 proc.StartInfo.Verb = "runas";
                 proc.Start();
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 // ignored
             }

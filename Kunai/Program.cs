@@ -8,7 +8,6 @@ namespace Kunai
 {
     internal class Program
     {
-        public static string[] Arguments;
         public static string Path = Directory.GetParent(System.Environment.ProcessPath).FullName;
         public static string PathToExec = System.Environment.ProcessPath;
 

@@ -85,5 +85,72 @@ namespace Kunai
             in_Node.Value.Value.Scenes.Add(pair);
             in_Node.Scene.Add(new CsdVisData.Scene(pair, in_Node));
         }
+        static Cast CloneCast(Cast in_Cast, Cast in_Parent, CsdVisData.Cast in_Vis)
+        {
+            var oldInfo = in_Cast.Info;
+            CastInfo newCastInfo = new CastInfo()
+            {
+                HideFlag = oldInfo.HideFlag,
+                Translation = oldInfo.Translation,
+                Rotation = oldInfo.Rotation,
+                Scale = oldInfo.Scale,
+                SpriteIndex = oldInfo.SpriteIndex,
+                Color = oldInfo.Color,
+                GradientBottomLeft = oldInfo.GradientBottomLeft,
+                GradientBottomRight = oldInfo.GradientBottomRight,
+                GradientTopLeft = oldInfo.GradientTopLeft,
+                GradientTopRight = oldInfo.GradientTopRight,
+                UserData0 = oldInfo.UserData0,
+                UserData1 = oldInfo.UserData1,
+                UserData2 = oldInfo.UserData2
+            };
+            Cast returnable =  new Cast
+            {
+                Name = in_Cast.Name + "_clone",
+                Field00 = in_Cast.Field00,
+                Type = in_Cast.Type,
+                Enabled = in_Cast.Enabled,
+
+                TopLeft = in_Cast.TopLeft,
+                BottomLeft = in_Cast.BottomLeft,
+                TopRight = in_Cast.TopRight,
+                BottomRight = in_Cast.BottomRight,
+
+                Field2C = in_Cast.Field2C.Value,
+                InheritanceFlags = in_Cast.InheritanceFlags.Value,
+                MaterialFlags = in_Cast.MaterialFlags.Value,
+
+                Text = in_Cast.Text,
+                FontName = in_Cast.FontName,
+                FontKerning = in_Cast.FontKerning,
+                Width = in_Cast.Width,
+                Height = in_Cast.Height,
+                Field58 = in_Cast.Field58,
+                Field5C = in_Cast.Field5C,
+
+                Origin = in_Cast.Origin,
+                Position = in_Cast.Position,
+                Field70 = in_Cast.Field70,
+
+                Info = newCastInfo,
+
+                SpriteIndices = (int[])in_Cast.SpriteIndices.Clone(),
+            };
+            in_Parent?.Add(returnable);
+            if (in_Cast.Children.Count > 0 )
+            {
+                foreach (var child in in_Cast.Children)
+                {
+                    CloneCast(child, returnable, in_Vis);                    
+                }
+            }
+            in_Vis.Parent.Casts.Add(new CsdVisData.Cast(returnable, in_Vis.Parent));
+            return returnable;
+        }
+        internal static void DuplicateCast(CsdVisData.Cast cast)
+        {
+            var castNew = CloneCast(cast.Value, null, cast);
+            cast.Value.Parent.Add(castNew);
+        }
     }
 }

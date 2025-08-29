@@ -16,7 +16,6 @@ namespace Kunai.ShurikenRenderer
 
         public int Sprite { get; set; }
 
-        public event PropertyChangedEventHandler PropertyChanged;
 
         public CharacterMapping(char in_C, int in_SprId)
         {

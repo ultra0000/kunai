@@ -423,6 +423,10 @@ namespace Kunai
 
                     ImGui.EndMenu();
                 }
+                if(ImGui.MenuItem("Duplicate"))
+                {
+                    CreationHelper.DuplicateCast(this);
+                }
 
                 if (ImGui.Selectable("Delete")) Parent.Remove(this);
             }

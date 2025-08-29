@@ -32,7 +32,6 @@ namespace Kunai.Window
         private KeyframeAddMenu keyframeAddMenu = new KeyframeAddMenu();
         private CastMotionAddMenu castMotionAddMenu = new CastMotionAddMenu();
         private CsdVisData.Animation currentMot;
-        bool notCreatingNewCast;
         private void DrawMotionElement(CsdVisData.Animation in_SceneMotion)
         {
             bool selected = false;
@@ -155,21 +154,21 @@ namespace Kunai.Window
         }
 
 
+        List<float> pointsXPlot = new List<float>();
+        List<float> pointsYPlot = new List<float>();
         private void DrawPlot(KunaiProject in_Renderer)
         {
+            pointsXPlot.Clear();
+            pointsYPlot.Clear();
             unsafe
             {
                 ImPlotPoint mousePosPlot = new();
                 if (ImPlot.BeginPlot("##Bezier", new System.Numerics.Vector2(ImGui.GetWindowSize().X / 1.73f, -1)))
                 {
-                    const int bufferSize = 256;
-                    byte* buffer = stackalloc byte[bufferSize];
-                    StrBuilder sb = new(buffer, bufferSize);
-                    sb.Append($"##anim");
-                    sb.End();
+                    var xAxis = ImPlot.GetCurrentPlot().XAxis(0);
+                    xAxis->Flags |= ImPlotAxisFlags.LockMin;
+                    xAxis->SetMin(0);
                     var selectedScene = KunaiProject.Instance.SelectionData.SelectedScene;
-                    ImPlot.SetupAxisLimits(ImAxis.X1, 0, 60);
-                    ImPlot.SetupAxisLimits(ImAxis.Y1, 0, 10);
                     if (selectedScene != null)
                     {
                         if (in_Renderer.SelectionData.TrackAnimation != null)
@@ -193,6 +192,9 @@ namespace Kunai.Window
                                 ImPlotPoint point = new ImPlotPoint(in_Renderer.SelectionData.TrackAnimation.Frames[i].Frame, isFloatValue ? in_Renderer.SelectionData.TrackAnimation.Frames[i].Value.Float : 0);
                                 ms_Points.Add(point);
                                 bool isClicked = false;
+
+                                pointsXPlot.Add((float)point.X);
+                                pointsYPlot.Add((float)point.Y);
                                 if (ImPlot.DragPoint(i, &point.X, &point.Y, in_Renderer.SelectionData.KeyframeSelected == in_Renderer.SelectionData.TrackAnimation.Frames[i] ? new System.Numerics.Vector4(1, 0.9f, 1, 1) : new System.Numerics.Vector4(0, 0.9f, 0, 1), 8, ImPlotDragToolFlags.None, &isClicked))
                                 {
                                     if (isFloatValue)
@@ -201,6 +203,15 @@ namespace Kunai.Window
                                 }
                                 if (isClicked)
                                     in_Renderer.SelectionData.KeyframeSelected = in_Renderer.SelectionData.TrackAnimation.Frames[i];
+                            }
+
+                            fixed (float* test = pointsXPlot.ToArray())
+                            {
+                                fixed (float* test2 = pointsYPlot.ToArray())
+                                {
+                                    ImPlot.SetNextLineStyle(new Vector4(0, 0.6f, 1, 1), 2.0f);
+                                    ImPlot.PlotLine($"##h1", test, test2, pointsXPlot.Count);
+                                }
                             }
                             //var p1 = points.ToArray()[0];
                             //ImPlot.PlotLine("##bez", &p1.X, &p1.Y, points.Count, ImPlotLineFlags.Loop, 0, sizeof(ImPlotPoint));
@@ -293,14 +304,32 @@ namespace Kunai.Window
 
                     if (correctionExists)
                     {
-                        var correction = keyframe.Correction.Value;
-                        var centerCor = correction.Center;
-                        var offsetCor = correction.Offset;
-                        ImGui.InputFloat2("Asp Center", ref centerCor);
-                        ImGui.InputFloat2("Asp Offset", ref offsetCor);
-                        correction.Center = centerCor;
-                        correction.Offset = offsetCor;
-                        keyframe.Correction = correction;
+                        var treeOpen = ImGui.TreeNodeEx("Aspect Correction");
+                        if(ImGui.BeginPopupContextItem())
+                        {
+                            if (ImGui.MenuItem("Remove"))
+                            {
+                                keyframe.Correction = null;
+                            }
+
+                            ImGui.EndPopup();
+                        }
+                        if (treeOpen)
+                        {
+                            if(keyframe.Correction != null)
+                            {
+                                var correction = keyframe.Correction.Value;
+                                var centerCor = correction.Center;
+                                var offsetCor = correction.Offset;
+                                ImGui.InputFloat2("Center", ref centerCor);
+                                ImGui.InputFloat2("Offset", ref offsetCor);
+                                correction.Center = centerCor;
+                                correction.Offset = offsetCor;
+                                keyframe.Correction = correction;
+                            }
+                            ImGui.TreePop();
+                        }
+                        
                     }
 
                     keyframe.Frame = frame;
@@ -312,8 +341,6 @@ namespace Kunai.Window
         public void OnReset(IProgramProject in_Renderer)
         {
         }
-
-        float m_Test;
         public void Render(IProgramProject in_Renderer)
         {
             var renderer = (KunaiProject)in_Renderer;

@@ -170,7 +170,7 @@ namespace Shuriken.Rendering
                 {
                     CreateTextureUnknown(in_Filename);
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                     Console.WriteLine("Unknown file format.");
                 }

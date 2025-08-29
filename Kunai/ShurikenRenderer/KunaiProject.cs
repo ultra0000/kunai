@@ -32,6 +32,7 @@ using System.Xml.Serialization;
 using System.Xml;
 using Kunai.Generic;
 using System.Reflection;
+using Hexa.NET.ImGuizmo;
 
 namespace Kunai.ShurikenRenderer
 {
@@ -192,7 +193,7 @@ namespace Kunai.ShurikenRenderer
                 VisibilityData = new CsdVisData(WorkProjectCsd);
 
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 //In case of any errors, dont handle it in debug, so that it can be debugged
 #if !DEBUG
@@ -791,18 +792,17 @@ namespace Kunai.ShurikenRenderer
         }
         void RecursiveSetCropListNode(SceneNode in_Node, List<Sprite> in_Sprites, List<Vector2> in_TexSizes)
         {
-            foreach (var s in in_Node.Scenes)
+            foreach (var scene in in_Node.Scenes)
             {
-                s.Value.Sprites = in_Sprites;
-                s.Value.Textures = in_TexSizes;
-                foreach (var a in s.Value.Motions)
+                scene.Value.Sprites = in_Sprites;
+                scene.Value.Textures = in_TexSizes;
+                foreach (var motion in scene.Value.Motions)
                 {
-
                     try
                     {
                         float maxFrame = int.MinValue;
 
-                        foreach (var familyMotion in a.Value.FamilyMotions)
+                        foreach (var familyMotion in motion.Value.FamilyMotions)
                         {
                             foreach (var castMotionList in familyMotion.CastMotions)
                             {
@@ -819,18 +819,18 @@ namespace Kunai.ShurikenRenderer
                             }
                         }
 
-                        if (a.Value.EndFrame < maxFrame)
-                            a.Value.EndFrame = maxFrame;
+                        if (motion.Value.EndFrame < maxFrame)
+                            motion.Value.EndFrame = maxFrame;
                     }
-                    catch (InvalidOperationException e)
+                    catch (InvalidOperationException)
                     {
                         continue;
                     }
                 }
             }
-            foreach (var c in in_Node.Children)
+            foreach (var child in in_Node.Children)
             {
-                RecursiveSetCropListNode(c.Value, in_Sprites, in_TexSizes);
+                RecursiveSetCropListNode(child.Value, in_Sprites, in_TexSizes);
             }
         }
         public EFileType GetFileType(string in_Path)
@@ -850,17 +850,19 @@ namespace Kunai.ShurikenRenderer
             CsdPlugin plugin = new CsdPlugin();
             file = plugin.Import("");
 
-            //List<Sprite> subImageList = new();
-            //List<Vector2> sizes = new List<Vector2>();
-            //SpriteHelper.BuildCropList(ref subImageList, ref sizes);
-            //RecursiveSetCropListNode(WorkProjectCsd.Project.Root, subImageList, sizes);
+            List<Sprite> subImageList = new();
+            List<Vector2> sizes = new List<Vector2>();
+            SpriteHelper.BuildCropList(ref subImageList, ref sizes);
+            RecursiveSetCropListNode(WorkProjectCsd.Project.Root, subImageList, sizes);
             string filePath = string.IsNullOrEmpty(in_Path) ? Config.WorkFilePath : in_Path;
 
-            var tempFolder = Directory.GetParent(filePath).FullName;
 
-            file.Write(Path.Combine(tempFolder, "output.json"));
-            var f = plugin.Export(file);
-            f.Write(Path.Combine(tempFolder, "output.xncp"));
+            var tempFolder = Directory.GetParent(filePath).FullName;
+            
+            //Uncomment to write generics
+            //file.Write(Path.Combine(tempFolder, "output.json"));
+            //var f = plugin.Export(file);
+            //f.Write(Path.Combine(tempFolder, "output.xncp"));
             switch (GetFileType(filePath))
             {
                 case EFileType.CsdXncp:

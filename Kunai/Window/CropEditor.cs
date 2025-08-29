@@ -108,16 +108,19 @@ namespace Kunai.Window
                 {
                     var texture = SpriteHelper.Textures[m_SelectedIndex];
                     var sprite = SpriteHelper.Crops[texture.CropIndices[m_SelectedSpriteIndex]];
+
+                    var texName = renderer.WorkProjectCsd.Textures[m_SelectedIndex].Name;
                     Vector2 spriteStart = sprite.Start;
                     Vector2 spriteSize = sprite.Dimensions;
                     ImGui.SeparatorText("Texture Info");
-                    ImGui.Text($"Name: {texture.Name}");
+                    ImGui.InputText($"Name", ref texName, 2048);
                     ImGui.Text($"Width: {texture.Width}");
                     ImGui.Text($"Height: {texture.Height}");
                     ImGui.SeparatorText("Crop");
                     ImGui.Text($"Currently editing: Crop ({m_SelectedSpriteIndex})");
                     ImGui.DragFloat2("Position", ref spriteStart, "%.0f");
                     ImGui.DragFloat2("Dimension", ref spriteSize, "%.0f");
+                    renderer.WorkProjectCsd.Textures[m_SelectedIndex].Name = texName;
                     spriteStart.X = Math.Clamp(spriteStart.X, 0, texture.Size.X);
                     spriteStart.Y = Math.Clamp(spriteStart.Y, 0, texture.Size.Y);
 
@@ -158,7 +161,6 @@ namespace Kunai.Window
         {
             if (ImGui.BeginListBox("##texturelist", new Vector2(in_AvgSizeWin, -1)))
             {
-                int idx = 0;
                 var result = ImKunai.TextureSelector(in_Renderer, true);
                 if (result.TextureIndex != -2)
                     m_SelectedIndex = result.TextureIndex;

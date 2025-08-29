@@ -107,8 +107,6 @@ namespace Kunai.Window.Modal
             if (ImGui.Button("Execute"))
             {
                 var cast = scene.Casts[m_SelectedCast];
-                bool createfam = false;
-                Family famToUse = null;
 
                 var data = GetCastMotionFromCast(cast.Value);
 
