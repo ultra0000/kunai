@@ -22,7 +22,6 @@ namespace Kunai.Window
         public void OnReset(IProgramProject in_Renderer)
         {
         }
-
         public void Render(IProgramProject in_Renderer)
         {
             var renderer = (KunaiProject)in_Renderer;
@@ -40,7 +39,7 @@ namespace Kunai.Window
                 ImKunai.TextFontAwesome(FontAwesome6.MagnifyingGlass);
                 ImGui.SameLine();
 
-                ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X - 200);
+                ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X - (ImGui.GetContentRegionAvail().X / 5));
                 ImGui.SliderFloat("##zoom", ref m_ZoomFactor, 0.5f, 5);
                 ImGui.SameLine();
                 ImKunai.TextFontAwesome(FontAwesome6.Display);

@@ -163,7 +163,7 @@ namespace Kunai.Window
             unsafe
             {
                 ImPlotPoint mousePosPlot = new();
-                if (ImPlot.BeginPlot("##Bezier", new System.Numerics.Vector2(ImGui.GetWindowSize().X / 1.73f, -1)))
+                if (ImPlot.BeginPlot("##Bezier", new System.Numerics.Vector2(ImGui.GetWindowSize().X / 1.73f, ms_WindowSizeY)))
                 {
                     var xAxis = ImPlot.GetCurrentPlot().XAxis(0);
                     xAxis->Flags |= ImPlotAxisFlags.LockMin;
@@ -267,7 +267,7 @@ namespace Kunai.Window
         }
         private void DrawKeyframeInspector()
         {
-            if (ImGui.BeginListBox("##animlist2", new System.Numerics.Vector2(-1, -1)))
+            if (ImGui.BeginListBox("##animlist2", new System.Numerics.Vector2(-1, ms_WindowSizeY)))
             {
                 var renderer = KunaiProject.Instance;
                 ImGui.SeparatorText("Keyframe");
@@ -341,15 +341,64 @@ namespace Kunai.Window
         public void OnReset(IProgramProject in_Renderer)
         {
         }
+
+        void DrawAnimControl(KunaiProject renderer)
+        {
+            ImGui.SameLine();
+            var windowSize = ImGui.GetWindowSize();
+            //var groupWidth = size1;FontSize + style.FramePadding.y * 2.0f
+            var buttonSize = new Vector2(ImGui.CalcTextSize(FontAwesome6.Play).X * 2, ImGui.GetFontSize() + ImGui.GetStyle().FramePadding.Y * 2);
+
+            //ImGui.PushFont(ImGuiController.FontAwesomeFont);
+            if (ImGui.Button(FontAwesome6.Camera, buttonSize))
+            {
+                renderer.SaveScreenshot();
+            }
+            ImGui.SameLine();
+
+
+            // Center group by setting the cursor position
+            //ImGui.SetCursorPosX((windowSize.X - groupWidth) * 0.2f);
+            ImGui.BeginGroup();
+            if (ImGui.Button(FontAwesome6.Stop))
+            {
+                renderer.Config.PlayingAnimations = false;
+                renderer.Config.Time = 0;
+            }
+            ImGui.SameLine();
+            if (ImGui.Button(renderer.Config.PlayingAnimations ? FontAwesome6.Pause : FontAwesome6.Play, buttonSize))
+                renderer.Config.PlayingAnimations = !renderer.Config.PlayingAnimations;
+
+            ImGui.SameLine();
+            if (ImGui.Button(FontAwesome6.RotateRight, buttonSize))
+            {
+                renderer.Config.Time = 0;
+            }
+            //ImGui.PopFont();
+            ImGui.EndGroup();
+        }
+        private static float ms_WindowSizeY;
         public void Render(IProgramProject in_Renderer)
         {
             var renderer = (KunaiProject)in_Renderer;
-            var size1 = ImGui.GetWindowViewport().Size.X / 4.5f;
-            ImGui.SetNextWindowPos(new System.Numerics.Vector2(size1, ImGui.GetWindowViewport().Size.Y / 1.5f), ImGuiCond.Always);
-            ImGui.SetNextWindowSize(new System.Numerics.Vector2(size1 * 2.5f, ImGui.GetWindowViewport().Size.Y / 3), ImGuiCond.Always);
-            if (ImGui.Begin("Animations", MainWindow.WindowFlags | ImGuiWindowFlags.NoTitleBar))
+            var size1 = ImGui.GetWindowViewport().Size.X ;
+            var windowSize = new System.Numerics.Vector2(size1, ImGui.GetWindowViewport().Size.Y / 3);
+            ImGui.SetNextWindowPos(new System.Numerics.Vector2(0, ImGui.GetWindowViewport().Size.Y / 1.5f), ImGuiCond.Always);
+            ImGui.SetNextWindowSize(windowSize, ImGuiCond.Always);
+            if (ImGui.Begin("Animations", MainWindow.WindowFlags))
             {
+                ms_WindowSizeY = ImGui.GetContentRegionAvail().Y - (ImGui.GetFontSize() + ImGui.GetStyle().FramePadding.Y * 3.5f);
+                //var oldCursorPos = ImGui.GetCursorPos
+                //ImGui.SameLine();
+
+                AnimList();
                 ImGui.SameLine();
+                DrawPlot(renderer);
+                ImGui.SameLine();
+                DrawKeyframeInspector();
+                keyframeAddMenu.Draw();
+                castMotionAddMenu.Draw();
+
                 ImKunai.TextFontAwesome(FontAwesome6.Stopwatch);
                 ImGui.SameLine();
                 ImGui.SetNextItemWidth(60);
@@ -359,44 +408,7 @@ namespace Kunai.Window
                         renderer.Config.Time = 0.0f;
                 }
                 ImGui.SameLine();
-                var windowSize = ImGui.GetWindowSize();
-                var groupWidth = size1; // Adjust as needed
-
-
-                //ImGui.PushFont(ImGuiController.FontAwesomeFont);
-                if (ImGui.Button(FontAwesome6.Camera))
-                {
-                    renderer.SaveScreenshot();
-                }
-                ImGui.SameLine();
-
-
-                // Center group by setting the cursor position
-                ImGui.SetCursorPosX((windowSize.X - groupWidth) * 0.7f);
-                ImGui.BeginGroup();
-                if (ImGui.Button(FontAwesome6.Stop))
-                {
-                    renderer.Config.PlayingAnimations = false;
-                    renderer.Config.Time = 0;
-                }
-                ImGui.SameLine();
-                if (ImGui.Button(renderer.Config.PlayingAnimations ? FontAwesome6.Pause : FontAwesome6.Play))
-                    renderer.Config.PlayingAnimations = !renderer.Config.PlayingAnimations;
-
-                ImGui.SameLine();
-                if (ImGui.Button(FontAwesome6.RotateRight))
-                {
-                    renderer.Config.Time = 0;
-                }
-                //ImGui.PopFont();
-                ImGui.EndGroup();
-                AnimList();
-                ImGui.SameLine();
-                DrawPlot(renderer);
-                ImGui.SameLine();
-                DrawKeyframeInspector();
-                keyframeAddMenu.Draw();
-                castMotionAddMenu.Draw();
+                DrawAnimControl(renderer);
                 ImGui.End();
             }
         }
@@ -404,14 +416,21 @@ namespace Kunai.Window
         private void AnimList()
         {
             //The list of anims, anim tracks and cast animations
-            if (ImGui.BeginListBox("##animlist", new System.Numerics.Vector2(ImGui.GetWindowSize().X / 5, -1)))
+            if (ImGui.BeginListBox("##animlist", new System.Numerics.Vector2(ImGui.GetWindowSize().X / 5, ms_WindowSizeY)))
             {
-                var selectedScene = KunaiProject.Instance.SelectionData.SelectedScene;
-                if (selectedScene != null)
+                if(KunaiProject.Instance.SelectionData.SelectedCast != null)
                 {
-                    foreach (CsdVisData.Animation sceneMotion in selectedScene.Animation)
+
+                }
+                else
+                {
+                    var selectedScene = KunaiProject.Instance.SelectionData.SelectedScene;
+                    if (selectedScene != null)
                     {
-                        DrawMotionElement(sceneMotion);
+                        foreach (CsdVisData.Animation sceneMotion in selectedScene.Animation)
+                        {
+                            DrawMotionElement(sceneMotion);
+                        }
                     }
                 }
                 ImGui.EndListBox();

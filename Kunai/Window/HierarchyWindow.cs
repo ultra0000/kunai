@@ -107,7 +107,7 @@ namespace Kunai.Window
             ImGui.SetNextWindowPos(new Vector2(0, MenuBarWindow.MenuBarHeight), ImGuiCond.Always);
             ImGui.SetNextWindowSize(
                 new Vector2(ImGui.GetWindowViewport().Size.X / 4.5f,
-                    ImGui.GetWindowViewport().Size.Y - MenuBarWindow.MenuBarHeight), ImGuiCond.Always);
+                    ImGui.GetWindowViewport().Size.Y / 1.5f - MenuBarWindow.MenuBarHeight), ImGuiCond.Always);
             if (ImGui.Begin("Hierarchy", MainWindow.WindowFlags))
             {
                 ms_SearchBox.Render();

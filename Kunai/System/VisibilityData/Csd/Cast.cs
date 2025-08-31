@@ -1,4 +1,5 @@
-﻿using Hexa.NET.ImGui;
+﻿using HekonrayBase;
+using Hexa.NET.ImGui;
 using Kunai.ShurikenRenderer;
 using Kunai.Window;
 using SharpNeedle.Framework.Ninja.Csd;
@@ -7,7 +8,7 @@ using SharpNeedle.Structs;
 using Shuriken.Rendering;
 using System;
 using System.Numerics;
-
+using System.Text;
 using CsdCast = SharpNeedle.Framework.Ninja.Csd.Cast;
 
 namespace Kunai
@@ -26,6 +27,7 @@ namespace Kunai
                 Value = in_Cast;
                 Parent = in_Parent;
             }
+
             public override void DrawInspector()
             {
                 Vector2 screenMultiplier = (SettingsWindow.ScreenCoordinates ? KunaiProject.Instance.ViewportSize : Vector2.One);
@@ -39,31 +41,14 @@ namespace Kunai
                 CastInfo info = Value.Info;
                 ElementInheritanceFlags inheritanceFlags = (ElementInheritanceFlags)Value.InheritanceFlags.Value;
                 
-                int field58 = (int)Value.Field58;
-                int field5c = (int)Value.Field5C;
-                int field70 = (int)Value.Field70;
                 Vector2 aspectRatioCorrection = (Vector2)Value.Position;
-                string name = Value.Name;
-                int field00 = (int)Value.Field00;
-                int type = (int)Value.Type;
-                bool enabled = Value.Enabled;
-                bool hideflag = info.HideFlag == 1;
-                Vector2 scale = info.Scale;
                 bool mirrorX = materialFlags.HasFlag(ElementMaterialFlags.MirrorX);
                 bool mirrorY = materialFlags.HasFlag(ElementMaterialFlags.MirrorY);
-                Vector2 rectSize = new System.Numerics.Vector2((int)Value.Width, (int)Value.Height);
                 Vector2 topLeftVert = Value.TopLeft * KunaiProject.Instance.ViewportSize;
                 Vector2 topRightVert = Value.TopRight * KunaiProject.Instance.ViewportSize;
                 Vector2 bottomLeftVert = Value.BottomLeft * KunaiProject.Instance.ViewportSize;
                 Vector2 bottomRightVert = Value.BottomRight * KunaiProject.Instance.ViewportSize;
-                float rotation = info.Rotation;
-                Vector2 origin = Value.Origin * screenMultiplier;
-                Vector2 translation = info.Translation * screenMultiplier;
-                Vector4 color = info.Color.ToVec4().Invert();
-                Vector4 colorTl = info.GradientTopLeft.ToVec4().Invert();
-                Vector4 colorTr = info.GradientTopRight.ToVec4().Invert();
-                Vector4 colorBl = info.GradientBottomLeft.ToVec4().Invert();
-                Vector4 colorBr = info.GradientBottomRight.ToVec4().Invert();
+                
                 bool inheritPosX = inheritanceFlags.HasFlag(ElementInheritanceFlags.InheritXPosition);
                 bool inheritPosY = inheritanceFlags.HasFlag(ElementInheritanceFlags.InheritYPosition);
                 bool inheritRot = inheritanceFlags.HasFlag(ElementInheritanceFlags.InheritRotation);
@@ -71,18 +56,20 @@ namespace Kunai
                 bool inheritScaleX = inheritanceFlags.HasFlag(ElementInheritanceFlags.InheritScaleX);
                 bool inheritScaleY = inheritanceFlags.HasFlag(ElementInheritanceFlags.InheritScaleY);
                 int spriteIndex = (int)info.SpriteIndex;
-                string text = Value.Text;
-                float kerning = Value.FontKerning * 100;
+                //string text = Value.Text;
+                //float kerning = Value.FontKerning * 100;
                 string fontname = Value.FontName;
 
                 int indexFont = SpriteHelper.FontNames.IndexOf(fontname);
 
-                ImGui.InputText("Name", ref name, 100, ImGuiInputTextFlags.AutoSelectAll);
-                ImGui.Combo("Type", ref type, typeStrings, 3);
+                Value.Name = HKGUI.DrawInput("Name", Value.Name);
+                Value.Type = (CsdCast.EType)HKGUI.DrawComboBox("Type", (int)Value.Type, typeStrings);
                 ImGui.SeparatorText("Status");
-                ImGui.Checkbox("Enabled", ref enabled);
+                Value.Enabled = HKGUI.DrawInput("Enabled", Value.Enabled);
                 ImGui.SameLine();
-                ImGui.Checkbox("Hidden", ref hideflag);
+                info.HideFlag = (uint)(HKGUI.DrawInput("Hidden", (info.HideFlag == 0 ? false : true)) == false ? 0 : 1);
+                //ImGui.Checkbox("Enabled", ref enabled);
+                //ImGui.Checkbox("Hidden", ref hideflag);
 
                 if (ImGui.CollapsingHeader("Dimensions", ImGuiTreeNodeFlags.DefaultOpen))
                 {
@@ -93,7 +80,7 @@ namespace Kunai
                         topRightVert = Value.TopRight * KunaiProject.Instance.ViewportSize;
                         bottomLeftVert = Value.BottomLeft * KunaiProject.Instance.ViewportSize;
                         bottomRightVert = Value.BottomRight * KunaiProject.Instance.ViewportSize;
-                        translation = Value.Info.Translation;
+                        //translation = Value.Info.Translation;
                     }
                     ImGui.SameLine();
 
@@ -111,8 +98,11 @@ namespace Kunai
 
                     ImGui.BeginGroup();
                     ImGui.SeparatorText("Rect Size");
-                    ImGui.InputFloat2("Quad Size", ref rectSize);
-                    ImGui.SetItemTooltip("This does not change any value in the tool, this is a leftover from the CellSprite Editor.");
+                    var widthHeight = HKGUI.DrawInput("Quad Size", new Vector2(Value.Width, Value.Height), HKGUIInputFlags.Drag, "This does not change any value in the tool,\nthis is a leftover from the CellSprite Editor.");
+                    Value.Width = (uint)widthHeight.X;
+                    Value.Height = (uint)widthHeight.Y;
+                    //ImGui.InputFloat2("Quad Size", ref rectSize);
+                    //ImGui.SetItemTooltip("This does not change any value in the tool, this is a leftover from the CellSprite Editor.");
                     ImGui.EndGroup();
 
                     ImGui.SeparatorText("Vertices");
@@ -125,21 +115,18 @@ namespace Kunai
                 }
                 if (ImGui.CollapsingHeader("Transform", ImGuiTreeNodeFlags.DefaultOpen))
                 {
-                    ImGui.DragFloat("Rotation", ref rotation);
-                    ImGui.SetItemTooltip("Rotation in degrees.");
-                    ImGui.DragFloat2("Origin", ref origin);
-                    ImGui.SetItemTooltip("Value used to offset the position of the cast (translation), this cannot be changed by animations.");
-                    ImGui.DragFloat2("Translation", ref translation);
-                    ImGui.SetItemTooltip("Position of the cast.");
-                    ImGui.InputFloat2("Scale", ref scale);
+                    info.Rotation = HKGUI.DrawInput("Rotation", info.Rotation, HKGUIInputFlags.Drag, "Rotation in degrees.");
+                    Value.Origin = HKGUI.DrawInput("Origin", Value.Origin * screenMultiplier, HKGUIInputFlags.Drag, "Value used to offset the translation of the cast.\nThis cannot be changed by animations.") / screenMultiplier;
+                    info.Translation = HKGUI.DrawInput("Translation", info.Translation * screenMultiplier, HKGUIInputFlags.Drag, "Position of the cast.") / screenMultiplier;
+                    info.Scale = HKGUI.DrawInput("Scale", info.Scale, HKGUIInputFlags.Drag);
                 }
                 if (ImGui.CollapsingHeader("Color", ImGuiTreeNodeFlags.DefaultOpen))
                 {
-                    ImGui.ColorEdit4("Color", ref color);
-                    ImGui.ColorEdit4("Top Left", ref colorTl);
-                    ImGui.ColorEdit4("Top Right", ref colorTr);
-                    ImGui.ColorEdit4("Bottom Left", ref colorBl);
-                    ImGui.ColorEdit4("Bottom Right", ref colorBr);
+                    info.Color = HKGUI.DrawColorInput("Color", info.Color.ToVec4().Invert()).Invert().ToSharpNeedleColor();
+                    info.GradientTopLeft = HKGUI.DrawColorInput("Top Left", info.GradientTopLeft.ToVec4().Invert()).Invert().ToSharpNeedleColor();
+                    info.GradientTopRight = HKGUI.DrawColorInput("Top Right", info.GradientTopRight.ToVec4().Invert()).Invert().ToSharpNeedleColor();
+                    info.GradientBottomLeft = HKGUI.DrawColorInput("Bottom Left", info.GradientBottomLeft.ToVec4().Invert()).Invert().ToSharpNeedleColor();
+                    info.GradientBottomRight = HKGUI.DrawColorInput("Bottom Right", info.GradientBottomRight.ToVec4().Invert()).Invert().ToSharpNeedleColor();
                 }
                 if (ImGui.CollapsingHeader("Inheritance", ImGuiTreeNodeFlags.DefaultOpen))
                 {
@@ -151,7 +138,7 @@ namespace Kunai
                     ImGui.Checkbox("Inherit Height", ref inheritScaleY);
                 }
 
-                if (type == 2)
+                if (Value.Type == CsdCast.EType.Font)
                 {
                     if (ImGui.CollapsingHeader("Text", ImGuiTreeNodeFlags.DefaultOpen))
                     {
@@ -161,9 +148,9 @@ namespace Kunai
                             fontname = SpriteHelper.FontNames[indexFont];
                         }
                         ImGui.PushID("textInput");
-                        ImGui.InputText("Text", ref text, 512);
+                        Value.Text = HKGUI.DrawInput("Text", Value.Text);
                         ImGui.PopID();
-                        ImGui.DragFloat("Kerning", ref kerning, 0.005f);
+                        Value.FontKerning = HKGUI.DrawInput("Kerning", Value.FontKerning * 100, HKGUIInputFlags.Drag) / 100;
                     }
                 }
                 if (ImGui.CollapsingHeader("Property Mask", ImGuiTreeNodeFlags.DefaultOpen))
@@ -229,13 +216,12 @@ namespace Kunai
                 if(ImGui.CollapsingHeader("Aspect Ratio Correction"))
                 {
                     ImGui.TextWrapped("All of these fields are unknown, if you can figure them out, tell me.");
-                    ImGui.InputInt("Field00", ref field00);
-                    ImGui.InputInt("Field5c", ref field5c);
-                    ImGui.InputInt("Field58", ref field58);
-                    ImGui.InputInt("Field70", ref field70);
+                    Value.Field58 = HKGUI.DrawInput("Field58", Value.Field58);
+                    Value.Field5C = HKGUI.DrawInput("Field5C", Value.Field5C);
                     ImGui.InputFloat2("Field68/6C", ref aspectRatioCorrection);
+                    Value.Field70 = HKGUI.DrawInput("Field70", Value.Field70);
                 }
-                if (type != 0)
+                if (Value.Type != 0)
                 {
 
                     if (ImGui.CollapsingHeader("Material", ImGuiTreeNodeFlags.DefaultOpen))
@@ -254,7 +240,7 @@ namespace Kunai
                         {
                             materialFlags = materialFlags.SetFlag(ElementMaterialFlags.LinearFiltering, filterType == 1);
                         }
-                        ImGui.BeginDisabled(type != (int)CsdCast.EType.Sprite);
+                        ImGui.BeginDisabled(Value.Type != CsdCast.EType.Sprite);
                         ImGui.InputInt("Selected Sprite", ref spriteIndex);
                         spriteIndex = Math.Clamp(spriteIndex, -1, 32); //can go over 32 for scu
 
@@ -334,34 +320,33 @@ namespace Kunai
                         ImGui.EndDisabled();
                     }
                 }
-                Value.Field58 = (uint)field58;
-                Value.Field5C = (uint)field5c;
-                Value.Field70 = (uint)field70;
-                Value.Name = name;
-                Value.Field00 = (uint)field00;
-                Value.Type = (CsdCast.EType)type;
-                Value.Enabled = enabled;
-                info.HideFlag = (uint)(hideflag ? 1 : 0);
+                //Value.Field58 = (uint)field58;
+                //Value.Field5C = (uint)field5c;
+                //Value.Field70 = (uint)field70;
+                ////Value.Name = name;
+                //Value.Field00 = (uint)field00;
+                //Value.Type = (CsdCast.EType)type;
+                //Value.Enabled = enabled;
+                //info.HideFlag = (uint)(hideflag ? 1 : 0);
                 //ADD EDIT FOR HIDE FLAG
                 if (mirrorX) materialFlags |= ElementMaterialFlags.MirrorX; else materialFlags &= ~ElementMaterialFlags.MirrorX;
                 if (mirrorY) materialFlags |= ElementMaterialFlags.MirrorY; else materialFlags &= ~ElementMaterialFlags.MirrorY;
-                Value.Width = (uint)rectSize.X;
-                Value.Height = (uint)rectSize.Y;
+                
                 Value.TopLeft = topLeftVert / KunaiProject.Instance.ViewportSize;
                 Value.TopRight = topRightVert / KunaiProject.Instance.ViewportSize;
                 Value.BottomLeft = bottomLeftVert / KunaiProject.Instance.ViewportSize;
                 Value.BottomRight = bottomRightVert / KunaiProject.Instance.ViewportSize;
                 Value.Position = aspectRatioCorrection;
-                Value.Origin = origin / screenMultiplier;
-                info.Rotation = rotation;
-                info.Translation = translation / screenMultiplier;
-                info.Color = color.Invert().ToSharpNeedleColor();
-                info.GradientTopLeft = colorTl.Invert().ToSharpNeedleColor();
-                info.GradientTopRight = colorTr.Invert().ToSharpNeedleColor();
-                info.GradientBottomLeft = colorBl.Invert().ToSharpNeedleColor();
-                info.GradientBottomRight = colorBr.Invert().ToSharpNeedleColor();
+                //Value.Origin = origin / screenMultiplier;
+                //info.Rotation = rotation;
+                //info.Translation = translation / screenMultiplier;
+                //info.Color = color.Invert().ToSharpNeedleColor();
+                //info.GradientTopLeft = colorTl.Invert().ToSharpNeedleColor();
+                //info.GradientTopRight = colorTr.Invert().ToSharpNeedleColor();
+                //info.GradientBottomLeft = colorBl.Invert().ToSharpNeedleColor();
+                //info.GradientBottomRight = colorBr.Invert().ToSharpNeedleColor();
                 info.SpriteIndex = spriteIndex;
-                info.Scale = scale;
+                //info.Scale = scale;
 
                 if (inheritPosX) inheritanceFlags |= ElementInheritanceFlags.InheritXPosition; else inheritanceFlags &= ~ElementInheritanceFlags.InheritXPosition;
                 if (inheritPosY) inheritanceFlags |= ElementInheritanceFlags.InheritYPosition; else inheritanceFlags &= ~ElementInheritanceFlags.InheritYPosition;
@@ -373,8 +358,8 @@ namespace Kunai
                 Value.Info = info;
                 Value.MaterialFlags = (uint)materialFlags;
                 Value.FontName = fontname;
-                Value.Text = text;
-                Value.FontKerning = kerning / 100;
+                //Value.Text = text;
+                //Value.FontKerning = kerning / 100;
             }
             public override TVisHierarchyResult DrawHierarchy()
             {

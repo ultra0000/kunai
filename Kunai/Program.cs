@@ -2,6 +2,7 @@
 using System;
 using System.IO;
 using System.Numerics;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Kunai
@@ -13,6 +14,7 @@ namespace Kunai
 
         private static void Main(string[] in_Args)
         {
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             Application.LaunchArguments = in_Args;
             Task.Run(UpdateChecker.CheckUpdate);
 
