@@ -7,7 +7,7 @@ The project is called Kunai because it is heavily based on [Shuriken](https://gi
 
 ## File Support
  > [!NOTE]  
-> The program cannot write any of these files as **split gncp** and **sncp** files yet, so they can only be saved as other formats.
+> The program cannot write any of these files as **sncp** files yet, so they can only be saved as other formats.
 Kunai can currently read these file formats:
 - xncp (Sonic the Hedgehog (2006), Sonic Generations)
 - yncp (Sonic Unleashed, Sonic Generations (Xbox 360/PS3))

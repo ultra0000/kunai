@@ -1,4 +1,4 @@
-﻿using Amicitia.IO.Binary;
+using Amicitia.IO.Binary;
 using BCnEncoder.Encoder;
 using BCnEncoder.ImageSharp;
 using BCnEncoder.Shared;
@@ -869,12 +869,12 @@ namespace Kunai.ShurikenRenderer
         {
             m_SaveScreenshotWhenRendered = true;
         }
-        void CreatePackageFile(IChunk in_Chunk, string in_Path, Endianness in_Endianness)
+        void CreatePackageFile(IChunk in_Chunk, string in_Path, Endianness in_Endianness, string in_Signature)
         {
-            using BinaryObjectWriter infoWriter = new BinaryObjectWriter(in_Path, Endianness.Little, Encoding.UTF8);
+            using BinaryObjectWriter infoWriter = new BinaryObjectWriter(in_Path, in_Endianness, Encoding.UTF8);
             InfoChunk info = new()
             {
-                Signature = BinaryHelper.MakeSignature<uint>(in_Endianness == Endianness.Little ? "NXIF" : "NYIF"),
+                Signature = BinaryHelper.MakeSignature<uint>(in_Signature),
             };
             info.Chunks.Add(in_Chunk);
             infoWriter.WriteObject(info);
@@ -884,12 +884,12 @@ namespace Kunai.ShurikenRenderer
             string path = string.IsNullOrEmpty(in_Path) ? Config.WorkFilePath : in_Path;
             if (in_Ultimate)
             {
-                CreatePackageFile(WorkProjectCsd.Project, path, Endianness.Little);
-                CreatePackageFile(WorkProjectCsd.Textures, Path.ChangeExtension(path, "dxl"), Endianness.Little);
+                CreatePackageFile(WorkProjectCsd.Project, path, Endianness.Little, "NXIF");
+                CreatePackageFile(WorkProjectCsd.Textures, Path.ChangeExtension(path, "dxl"), Endianness.Little, "NXIF");
             }
             else
             {
-                CreatePackageFile(WorkProjectCsd.Project, path, Endianness.Big);
+                CreatePackageFile(WorkProjectCsd.Project, path, Endianness.Big, "NGIF");
                 ShowMessageBoxCross("Warning", "This program can't export tls files.\nYou will have to create them yourself using BrawlBox.", true);
             }
         }

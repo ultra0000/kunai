@@ -1,4 +1,4 @@
-﻿using HekonrayBase;
+using HekonrayBase;
 using HekonrayBase.Base;
 using Hexa.NET.ImGui;
 using Kunai.ShurikenRenderer;
@@ -79,7 +79,7 @@ namespace Kunai.Window
                         {
                             SaveFile(renderer);
                         }
-                        if (ImGui.MenuItem("Colors GNCP"))
+                        if (ImGui.MenuItem("Split GNCP"))
                         {
                             renderer.ExportProjectChunk(null, false);
                         }
@@ -101,7 +101,7 @@ namespace Kunai.Window
                                 renderer.SaveCurrentFile(path);
                             }
                         }
-                        if (ImGui.MenuItem("Colors GNCP"))
+                        if (ImGui.MenuItem("Split GNCP"))
                         {
                             var dialog = NativeFileDialogSharp.Dialog.FileSave("gncp");
                             if (dialog.IsOk)
