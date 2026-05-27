@@ -1,3 +1,4 @@
+using Amicitia.IO.Binary;
 using HekonrayBase;
 using HekonrayBase.Base;
 using Hexa.NET.ImGui;
@@ -236,15 +237,26 @@ namespace Kunai.Window
 
         private static void ReloadFile(KunaiProject renderer)
         {
-            renderer.LoadFile(renderer.Config.WorkFilePath);
+            renderer.LoadFile(renderer.Config.WorkFilePath, renderer.WorkProjectCsd.Endianness);
         }
 
         private static void OpenFile(KunaiProject renderer)
         {
             var dialog = NativeFileDialogSharp.Dialog.FileOpen(FiltersOpen);
+
             if (dialog.IsOk)
             {
-                renderer.LoadFile(dialog.Path);
+                Endianness endianness = Endianness.Big;
+                switch (renderer.GetFileType(dialog.Path))
+                {
+                    case KunaiProject.EFileType.CsdXncp:
+                    case KunaiProject.EFileType.CsdSncp:
+                        endianness = Endianness.Little;
+                        break;
+                }
+
+
+                renderer.LoadFile(dialog.Path, endianness);
             }
         }
 
@@ -256,6 +268,8 @@ namespace Kunai.Window
                 System.Media.SystemSounds.Asterisk.Play();
             }
         }
+
+
 
         private void ProcessShortcuts(KunaiProject renderer)
         {

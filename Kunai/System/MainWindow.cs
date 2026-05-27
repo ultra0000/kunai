@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using TeamSpettro.SettingsSystem;
 using HekonrayBase;
 using HekonrayBase.Settings;
+using Amicitia.IO.Binary;
 using HekonrayBase.Base;
 
 
@@ -57,7 +58,20 @@ namespace Kunai
 
         private void LoadFromArgs(string[] in_Args)
         {
-            KunaiProject.LoadFile(in_Args[0]);
+            Endianness endianness = Endianness.Big;
+
+            if (string.IsNullOrEmpty(in_Args[0]) == false)
+            {
+                switch (System.IO.Path.GetExtension(in_Args[0].ToLower()))
+                {
+                    case ".xncp":
+                    case ".sncp":
+                        endianness = Endianness.Little;
+                        break;
+                }
+            }
+
+            KunaiProject.LoadFile(in_Args[0], endianness);
         }
 
         protected override void OnResize(ResizeEventArgs in_E)
