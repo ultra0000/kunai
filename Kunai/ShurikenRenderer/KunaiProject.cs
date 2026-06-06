@@ -105,7 +105,7 @@ namespace Kunai.ShurikenRenderer
             ReferenceImageData.Enabled = true;
         }
 
-        public void LoadFile(string in_Path)
+        public void LoadFile(string in_Path, Endianness endianness)
         {
             try
             {
@@ -129,14 +129,15 @@ namespace Kunai.ShurikenRenderer
                         // they have texture lists as tls (wii format) and dxl (literally just TextureList)
                         // instead of being combined into the file with the project
                         // as is the case literally everywhere else except for shadow!                    
-                        HandleSplitCsdColors(in_Path, isDxlFilePresent, isTlsFilePresent);
+                        HandleSplitCsdColors(in_Path, isDxlFilePresent, isTlsFilePresent, endianness);
                     }
                     else
                     {
                         //File probably uses TXD or has no file asssociated with it, try to continue anyway.
                         WorkProjectCsd = new CsdProject();
                         WorkProjectCsd.Name = Path.GetFileName(in_Path);
-                        WorkProjectCsd.Project = GetProjectChunkSplit(in_Path, Endianness.Big);
+                        WorkProjectCsd.Project = GetProjectChunkSplit(in_Path, endianness);
+                        WorkProjectCsd.Endianness = endianness;
                         WorkProjectCsd.Textures = new TextureListNN();
                         Application.ShowMessageBoxCross("Warning", "This file is split, but the program does not know where the textures are.\nThis file will be displayed with no textures.", 1);
                     }
@@ -258,7 +259,7 @@ namespace Kunai.ShurikenRenderer
         /// <param name="in_Path">Path to the Csd file</param>
         /// <param name="in_IsDxlFilePresent"></param>
         /// <param name="in_IsTlsFilePresent"></param>
-        private void HandleSplitCsdColors(string in_Path, bool in_IsDxlFilePresent, bool in_IsTlsFilePresent)
+        private void HandleSplitCsdColors(string in_Path, bool in_IsDxlFilePresent, bool in_IsTlsFilePresent, Endianness endianness)
         {
             string pathExtra = in_IsDxlFilePresent ? Path.ChangeExtension(in_Path, "dxl") : Path.ChangeExtension(in_Path, "tls");
             byte[] csdFile = File.ReadAllBytes(in_Path);
@@ -301,8 +302,9 @@ namespace Kunai.ShurikenRenderer
                 }
 
                 WorkProjectCsd = new CsdProject();
-                WorkProjectCsd.Project = GetProjectChunkSplit(in_Path, Endianness.Big);
+                WorkProjectCsd.Project = GetProjectChunkSplit(in_Path, endianness);
                 WorkProjectCsd.Textures = newTexList;
+                WorkProjectCsd.Endianness = endianness;
             }
 
             // SCU is the only case where split XNCPs exist
@@ -318,6 +320,7 @@ namespace Kunai.ShurikenRenderer
                     VirtualFile file = new VirtualFile(Path.GetFileName(in_Path), new VirtualDirectory(Directory.GetParent(in_Path).FullName));
                     file.BaseStream = memstr;
                     WorkProjectCsd = ResourceManager.Instance.Open<CsdProject>(file);
+                    WorkProjectCsd.Endianness = endianness;
                 }
             }
         }
